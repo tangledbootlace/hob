@@ -1,0 +1,113 @@
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    restart: unless-stopped
+    volumes:
+      - ./docker/data/prometheus:/etc/prometheus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.hob.localhost`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./docker/data/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/data/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./docker/data/grafana/dashboards:/var/lib/grafana/dashboards
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.hob.localhost`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    restart: always
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+    ports:
+      - 4317:4317
+      - 4318:4318
+      - 9411:9411
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jaeger.rule=Host(`jaeger.hob.localhost`)"
+      - "traefik.http.routers.jaeger.entrypoints=web"
+      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    container_name: db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Password123
+    ports:
+      - 1433:1433
+    volumes:
+      - ./docker/data/mssql/data:/var/opt/mssql/data
+    restart: always
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    environment:
+      - RABBITMQ_DEFAULT_USER=local
+      - RABBITMQ_DEFAULT_PASS=local
+    labels:
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.rabbitmq.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.rabbitmq.entrypoints=rabbitmq"
+      - "traefik.tcp.services.rabbitmq.loadbalancer.server.port=5672"
+      - "traefik.http.routers.rabbitmq-mgmt.entrypoints=web"
+      - "traefik.http.routers.rabbitmq-mgmt.rule=Host(`web.rabbitmq.hob.localhost`)"
+      - "traefik.http.routers.rabbitmq-mgmt.service=rabbitmq-mgmt"
+      - "traefik.http.services.rabbitmq-mgmt.loadbalancer.server.port=15672"
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.rabbitmq.address=:5672"
+      - "--entryPoints.smtp.address=:25"
+    ports:
+      - 80:80
+      # - 5672:5672
+      - 8080:8080
+      - 25:25
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  # smtp:
+  #   image: maildev/maildev
+  #   healthcheck:
+  #     disable: true
+  #   ports:
+  #     - 1025:1025
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.smtp-web.rule=Host(`emails.hob.localhost`)"
+  #     - "traefik.http.routers.smtp-web.entrypoints=web"
+  #     - "traefik.http.services.smtp-web.loadbalancer.server.port=1080"
+  #     - "traefik.tcp.routers.smtp.rule=HostSNI(`*`)"
+  #     - "traefik.tcp.routers.smtp.entrypoints=smtp"
+  #     - "traefik.tcp.services.smtp.loadbalancer.server.port=1025"

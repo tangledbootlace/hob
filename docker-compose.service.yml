@@ -1,0 +1,23 @@
+services:
+  hob.api:
+    container_name: hob.api
+    image: hob.api
+    build:
+      context: .
+      dockerfile: HOB.API/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Debug
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - HOB_SERVICES_ContainerPort=8080
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-services-users.rule=Host(`hob.api.localhost`)"
+      - "traefik.http.routers.backend-services-users.entrypoints=web"
