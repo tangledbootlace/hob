@@ -1,2 +1,2 @@
-# hob-api
-House of Burgess API
+# hob
+House of Burgesses Services
