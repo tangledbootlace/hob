@@ -6,18 +6,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 House of Burgesses Services (HOB) is a .NET 9.0 ASP.NET Core Web API project with Entity Framework Core, MassTransit message bus, and a focus on observability, distributed tracing, and microservices architecture.
 
+### Directory Structure
+
+```
+hob/
+├── src/                          # Application source code
+│   ├── hob.sln                   # .NET solution file
+│   ├── HOB.API/                  # ASP.NET Core Web API
+│   ├── HOB.Data/                 # Entity Framework Core data layer
+│   ├── HOB.Worker/               # Background worker service
+│   └── HOB.Common/               # Shared library
+├── hob-dashboard/                # Next.js dashboard UI
+├── local-containers/             # Local development Docker setup
+│   ├── docker-compose.yml
+│   ├── docker-compose.infrastructure.yml
+│   ├── docker-compose.service.yml
+│   ├── .env.example
+│   └── data/                     # Persistent data volumes
+├── infrastructure/               # Production infrastructure
+│   ├── terraform/
+│   ├── docker-compose.production.yml
+│   ├── docker-compose.infrastructure.yml
+│   ├── docker-compose.services.yml
+│   ├── docker-compose.worker.yml
+│   ├── run-worker.sh
+│   └── .env.example
+├── docs/                         # Comprehensive documentation
+└── .github/workflows/            # CI/CD workflows
+```
+
 ### Solution Projects
 
-- **HOB.API**: ASP.NET Core Web API with CRUD endpoints
-- **HOB.Data**: Entity Framework Core data layer with entities and DbContext
-- **HOB.Worker**: Console application for asynchronous report generation
-- **HOB.Common.Library**: Shared library with cross-cutting concerns
+- **HOB.API** (`src/HOB.API/`): ASP.NET Core Web API with CRUD endpoints
+- **HOB.Data** (`src/HOB.Data/`): Entity Framework Core data layer with entities and DbContext
+- **HOB.Worker** (`src/HOB.Worker/`): Console application for asynchronous report generation
+- **HOB.Common** (`src/HOB.Common/`): Shared library with cross-cutting concerns
 
 ## Build and Development Commands
 
 ### Building the Project
 
 ```bash
+# Navigate to source directory
+cd src
+
 # Build the solution
 dotnet build hob.sln
 
@@ -31,6 +63,9 @@ dotnet restore hob.sln
 ### Running the Application
 
 ```bash
+# Navigate to local containers directory
+cd local-containers
+
 # Start all services (API + infrastructure)
 docker-compose up
 
@@ -53,6 +88,7 @@ All services are routed through Traefik reverse proxy:
 
 - **API**: http://hob.api.localhost
 - **Swagger UI**: http://hob.api.localhost/swagger (Development only)
+- **Dashboard**: http://dashboard.hob.localhost
 - **Grafana**: http://grafana.hob.localhost (admin/grafana)
 - **Prometheus**: http://prometheus.hob.localhost
 - **Jaeger**: http://jaeger.hob.localhost
@@ -63,26 +99,31 @@ All services are routed through Traefik reverse proxy:
 
 - **SQL Server**: localhost:1433
 - **User**: sa
-- **Password**: Password123
+- **Password**: Password123 (configurable via .env)
 
 ## Architecture
 
-### Project Structure
+### Source Code Structure
 
-- **HOB.API**: Main API project containing endpoints and application-specific logic
+All application code is located in the `src/` directory:
+
+- **src/HOB.API**: Main API project containing endpoints and application-specific logic
   - `Customers/`: Customer CRUD endpoints (Create, Get, List, Update, Delete)
   - `Orders/`: Order CRUD endpoints (Create, Get, List, Update, Delete)
   - `Sales/`: Sale CRUD endpoints (Create, Get, List, Update, Delete)
   - `Reports/`: Report generation endpoint (triggers async worker)
+  - `Dashboard/`: Dashboard summary endpoint
   - `Extensions/`: Service registration and endpoint mapping
-- **HOB.Data**: Entity Framework Core data access layer
+  - `Dockerfile`: Container image definition
+- **src/HOB.Data**: Entity Framework Core data access layer
   - `Entities/`: Domain entities (Customer, Order, Sale)
   - `HobDbContext.cs`: EF Core DbContext with fluent configuration and seed data
-- **HOB.Worker**: Console application for asynchronous tasks
+- **src/HOB.Worker**: Console application for asynchronous tasks
   - `Consumers/`: MassTransit message consumers
   - `Observers/`: Queue drain observer for graceful shutdown
   - `Services/`: CSV report generation service
-- **HOB.Common.Library**: Shared library with cross-cutting concerns
+  - `Dockerfile`: Container image definition
+- **src/HOB.Common**: Shared library with cross-cutting concerns
   - `Messages/`: MassTransit message contracts
   - `Observability/Healthchecks`: Health check configuration
   - `Observability/Telemetry`: OpenTelemetry tracing
@@ -111,7 +152,7 @@ All services are routed through Traefik reverse proxy:
 └── [FeatureName]Response.cs
 ```
 
-See `GetTestEndpoint` folder for reference implementation.
+See `src/HOB.API/GetTestEndpoint/` for reference implementation.
 
 **Extension Methods**: Service registration and middleware configuration use extension methods:
 - `ServiceCollectionExtensions.cs` for `IServiceCollection` extensions
@@ -128,16 +169,18 @@ See `GetTestEndpoint` folder for reference implementation.
 The API listens on a port configured via environment variable `HOB_SERVICES_ContainerPort` (default: 8080).
 
 Application settings are in:
-- `appsettings.json`: Base configuration
-- `appsettings.Development.json`: Development overrides
+- `src/HOB.API/appsettings.json`: Base configuration
+- `src/HOB.API/appsettings.Development.json`: Development overrides
 
 ### Adding New Endpoints
 
-1. Create a new folder in `HOB.API` for your feature
+1. Create a new folder in `src/HOB.API` for your feature
 2. Create Request, Response, and RequestHandler classes following MediatR pattern
 3. Register the endpoint in a new or existing `WebApplicationExtensions.cs` method
 4. Use `.WithOpenApi()` to include in Swagger documentation
 5. Register handler via MediatR (auto-registered from assembly scan in Program.cs)
+
+See `src/HOB.API/GetTestEndpoint/` for a reference implementation.
 
 ### Infrastructure Dependencies
 
@@ -149,7 +192,11 @@ The solution depends on:
 - **Prometheus**: Metrics collection (port 9090)
 - **Grafana**: Metrics visualization (port 3000)
 
-These are managed via Docker Compose and must be healthy before the services start.
+These are managed via Docker Compose:
+- **Local Development**: `local-containers/docker-compose.infrastructure.yml`
+- **Production**: `infrastructure/docker-compose.infrastructure.yml`
+
+All services must be healthy before the application starts.
 
 ### API Endpoints
 
@@ -179,10 +226,13 @@ All endpoints are documented in Swagger UI at http://hob.api.localhost/swagger
 #### Reports
 - `POST /api/reports/generate` - Generate sales report (async via worker)
 
+#### Dashboard
+- `GET /api/dashboard/summary` - Get dashboard summary statistics
+
 ### Worker Service
 
-The HOB.Worker is a console application designed to run as an Azure Container App Job:
-- **Trigger**: Cron schedule (configure in Azure)
+The HOB.Worker is a console application designed to run as a scheduled job:
+- **Trigger**: Cron schedule via GitHub Actions or manual execution
 - **Process**: Consumes report generation messages from RabbitMQ
 - **Output**: CSV reports in `/reports` directory
 - **Lifecycle**: Starts → Processes messages → Waits 30s → Exits gracefully
@@ -192,12 +242,38 @@ The HOB.Worker is a console application designed to run as an Azure Container Ap
 
 Currently, no test projects exist in the solution. When adding tests:
 - Use xUnit as the testing framework (standard for .NET)
-- Name test projects as `[ProjectName].Tests`
-- Run tests with: `dotnet test`
+- Name test projects as `[ProjectName].Tests` and place in `src/` directory
+- Add test projects to `src/hob.sln`
+- Run tests with: `cd src && dotnet test`
+
+## Environment Configuration
+
+### Local Development
+
+Environment variables are configured in `local-containers/.env`. Copy from `local-containers/.env.example` and customize as needed. Default values are suitable for local development.
+
+### Production Deployment
+
+Production environment variables are provided via:
+- GitHub Secrets (for sensitive data)
+- GitHub Variables (for non-sensitive configuration)
+- Portainer Environment Variables
+
+See `infrastructure/.env.example` for the complete list of required variables. **Never commit secrets to version control.**
+
+## Additional Documentation
+
+For more detailed information, see:
+- [README.md](README.md) - Project overview and quick start
+- [docs/Home.md](docs/Home.md) - Comprehensive documentation hub
+- [docs/Infrastructure-Setup.md](docs/Infrastructure-Setup.md) - Production setup guide
+- [docs/Deployment-and-Operations.md](docs/Deployment-and-Operations.md) - Operations guide
+- [docs/architecture.md](docs/architecture.md) - Architecture details
+- [docs/api-endpoints.md](docs/api-endpoints.md) - API endpoint documentation
 
 ## TODO Items in Code
 
-The following items are marked as TODO in `Program.cs`:
+The following items are marked as TODO in `src/HOB.API/Program.cs`:
 - Add DI services (line 20)
 - Add service metrics middleware (line 22)
 - Use metrics middleware (line 28)

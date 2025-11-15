@@ -105,13 +105,19 @@ Welcome to the House of Burgesses (HOB) infrastructure documentation. This wiki 
 
 ```
 infrastructure/
-└── terraform/
-    ├── provider.tf              # Portainer provider configuration
-    ├── variables.tf             # Variable definitions
-    ├── main.tf                  # Stack resources
-    ├── outputs.tf               # Output values
-    ├── terraform.tfvars.example # Example configuration
-    └── terraform.tfvars         # Your configuration (gitignored)
+├── terraform/
+│   ├── provider.tf              # Portainer provider configuration
+│   ├── variables.tf             # Variable definitions
+│   ├── main.tf                  # Stack resources
+│   ├── outputs.tf               # Output values
+│   ├── terraform.tfvars.example # Example configuration
+│   └── terraform.tfvars         # Your configuration (gitignored)
+├── docker-compose.production.yml
+├── docker-compose.infrastructure.yml
+├── docker-compose.services.yml
+├── docker-compose.worker.yml
+├── run-worker.sh
+└── .env.example
 ```
 
 ### Quick Commands
@@ -135,12 +141,20 @@ terraform output
 
 ## 🐳 Docker Compose Files
 
-### Project-Specific Infrastructure
+### Local Development
 
-- `HOB.API/infrastructure/docker-compose.infrastructure.yml` - Infrastructure services
-- `HOB.API/infrastructure/docker-compose.services.yml` - Application services
-- `HOB.Worker/infrastructure/docker-compose.worker.yml` - Worker job
-- `docker-compose.production.yml` - Combined configuration for local testing
+- `local-containers/docker-compose.yml` - Main compose file (includes infrastructure and services)
+- `local-containers/docker-compose.infrastructure.yml` - Infrastructure services only
+- `local-containers/docker-compose.service.yml` - Application services only
+- `local-containers/.env.example` - Example environment variables for local development
+
+### Production Deployment
+
+- `infrastructure/docker-compose.production.yml` - Combined production configuration
+- `infrastructure/docker-compose.infrastructure.yml` - Production infrastructure stack
+- `infrastructure/docker-compose.services.yml` - Production services stack
+- `infrastructure/docker-compose.worker.yml` - Worker job configuration
+- `infrastructure/.env.example` - Example environment variables (secrets via GitHub/Portainer)
 
 ## 🔄 GitHub Actions Workflows
 
@@ -294,6 +308,7 @@ See [Making Infrastructure Changes](Infrastructure-Changes.md) for detailed work
 - [CLAUDE.md](../CLAUDE.md) - Project overview and development guide
 - [README.md](../README.md) - Repository README
 - [Infrastructure README](../infrastructure/README.md) - Infrastructure overview
+- [Source Code](../src/) - Application source code (.NET projects and solution)
 
 ## 📅 Maintenance Schedule
 
@@ -322,6 +337,6 @@ See [Making Infrastructure Changes](Infrastructure-Changes.md) for detailed work
 
 ---
 
-**Last Updated**: 2024-01-15
+**Last Updated**: 2025-11-15
 **Maintained By**: Development Team
-**Version**: 1.0.0
+**Version**: 2.0.0
