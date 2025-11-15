@@ -1,5 +1,6 @@
 using HOB.Common.Library.Shared;
 using HOB.Common.Library.Observability.HealthChecks;
+using HOB.Common.Library.Observability.Metrics;
 using HOB.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,13 +20,13 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 
 //TODO: add DI services
 
-//TODO: add service metrics middleware
+builder.Services.AddPrometheusMetrics();
 
 var app = builder.Build();
 
 app.UseCustomExceptionHandling();
 
-//TODO: use metrics middleware
+app.UsePrometheusMetrics();
 
 app.UseSwaggerDashboard();
 
