@@ -3,8 +3,8 @@ services:
     container_name: hob.api
     image: hob.api
     build:
-      context: ../
-      dockerfile: src/HOB.API/Dockerfile
+      context: ../src/back-end-dotnet
+      dockerfile: HOB.API/Dockerfile
       args:
         - BUILD_CONFIGURATION=Debug
     environment:
@@ -26,8 +26,8 @@ services:
 
   worker:
     build:
-      context: ../
-      dockerfile: src/HOB.Worker/Dockerfile
+      context: ../src/back-end-dotnet
+      dockerfile: HOB.Worker/Dockerfile
     image: hob-worker:latest
     container_name: hob-worker
     depends_on:
@@ -51,7 +51,7 @@ services:
 
   dashboard:
     build:
-      context: ../hob-dashboard
+      context: ../src/front-end-nextjs/hob-dashboard
       dockerfile: Dockerfile
     image: hob-dashboard:latest
     container_name: hob-dashboard
