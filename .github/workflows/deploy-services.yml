@@ -1,0 +1,157 @@
+name: Deploy Services to Portainer
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        default: 'latest'
+      deploy_infrastructure:
+        description: 'Deploy infrastructure stack'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      deploy_services:
+        description: 'Deploy services stack'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: image_tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6'
+
+      - name: Deploy Infrastructure via Terraform
+        if: inputs.deploy_infrastructure == 'true'
+        working-directory: infrastructure/terraform
+        run: |
+          cat > terraform.tfvars <<EOF
+          portainer_url         = "${{ secrets.PORTAINER_URL }}"
+          portainer_username    = "${{ secrets.PORTAINER_USERNAME }}"
+          portainer_password    = "${{ secrets.PORTAINER_PASSWORD }}"
+          portainer_endpoint_id = ${{ secrets.PORTAINER_ENDPOINT_ID }}
+
+          environment = "${{ inputs.environment || 'production' }}"
+
+          hob_api_domain       = "${{ vars.HOB_API_DOMAIN }}"
+          hob_dashboard_domain = "${{ vars.HOB_DASHBOARD_DOMAIN }}"
+          grafana_domain       = "${{ vars.GRAFANA_DOMAIN }}"
+          prometheus_domain    = "${{ vars.PROMETHEUS_DOMAIN }}"
+          jaeger_domain        = "${{ vars.JAEGER_DOMAIN }}"
+          rabbitmq_domain      = "${{ vars.RABBITMQ_DOMAIN }}"
+
+          db_password            = "${{ secrets.DB_PASSWORD }}"
+          rabbitmq_user          = "${{ secrets.RABBITMQ_USER }}"
+          rabbitmq_password      = "${{ secrets.RABBITMQ_PASSWORD }}"
+          grafana_admin_password = "${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+
+          docker_registry          = "${{ vars.DOCKER_REGISTRY || 'ghcr.io' }}"
+          docker_registry_username = "${{ github.actor }}"
+          docker_registry_password = "${{ secrets.GITHUB_TOKEN }}"
+          image_tag                = "${{ steps.image_tag.outputs.tag }}"
+
+          worker_schedule      = "${{ vars.WORKER_SCHEDULE || '*/5 * * * *' }}"
+          data_volume_path     = "${{ vars.DATA_VOLUME_PATH || '/opt/hob/data' }}"
+          reports_volume_path  = "${{ vars.REPORTS_VOLUME_PATH || '/opt/hob/reports' }}"
+          EOF
+
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Deploy Services Only
+        if: inputs.deploy_services == 'true' && inputs.deploy_infrastructure != 'true'
+        working-directory: infrastructure/terraform
+        run: |
+          cat > terraform.tfvars <<EOF
+          portainer_url         = "${{ secrets.PORTAINER_URL }}"
+          portainer_username    = "${{ secrets.PORTAINER_USERNAME }}"
+          portainer_password    = "${{ secrets.PORTAINER_PASSWORD }}"
+          portainer_endpoint_id = ${{ secrets.PORTAINER_ENDPOINT_ID }}
+
+          environment = "${{ inputs.environment || 'production' }}"
+
+          hob_api_domain       = "${{ vars.HOB_API_DOMAIN }}"
+          hob_dashboard_domain = "${{ vars.HOB_DASHBOARD_DOMAIN }}"
+          grafana_domain       = "${{ vars.GRAFANA_DOMAIN }}"
+          prometheus_domain    = "${{ vars.PROMETHEUS_DOMAIN }}"
+          jaeger_domain        = "${{ vars.JAEGER_DOMAIN }}"
+          rabbitmq_domain      = "${{ vars.RABBITMQ_DOMAIN }}"
+
+          db_password            = "${{ secrets.DB_PASSWORD }}"
+          rabbitmq_user          = "${{ secrets.RABBITMQ_USER }}"
+          rabbitmq_password      = "${{ secrets.RABBITMQ_PASSWORD }}"
+          grafana_admin_password = "${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+
+          docker_registry          = "${{ vars.DOCKER_REGISTRY || 'ghcr.io' }}"
+          docker_registry_username = "${{ github.actor }}"
+          docker_registry_password = "${{ secrets.GITHUB_TOKEN }}"
+          image_tag                = "${{ steps.image_tag.outputs.tag }}"
+
+          worker_schedule      = "${{ vars.WORKER_SCHEDULE || '*/5 * * * *' }}"
+          data_volume_path     = "${{ vars.DATA_VOLUME_PATH || '/opt/hob/data' }}"
+          reports_volume_path  = "${{ vars.REPORTS_VOLUME_PATH || '/opt/hob/reports' }}"
+          EOF
+
+          terraform init
+          terraform apply -target=portainer_stack.services -auto-approve
+
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag**: ${{ steps.image_tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Infrastructure**: ${{ inputs.deploy_infrastructure || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Services**: ${{ inputs.deploy_services || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Access URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- API: http://${{ vars.HOB_API_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard: http://${{ vars.HOB_DASHBOARD_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Grafana: http://${{ vars.GRAFANA_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Prometheus: http://${{ vars.PROMETHEUS_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Jaeger: http://${{ vars.JAEGER_DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- RabbitMQ: http://${{ vars.RABBITMQ_DOMAIN }}" >> $GITHUB_STEP_SUMMARY

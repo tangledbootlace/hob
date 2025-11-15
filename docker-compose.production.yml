@@ -1,0 +1,219 @@
+# Production Docker Compose Configuration
+# This file is provided for reference and local testing
+# Production deployment uses Portainer via Terraform or GitHub Actions
+#
+# For production deployment, see:
+# - infrastructure/terraform/README.md
+# - .github/workflows/deploy.yml
+# - HOB.API/infrastructure/README.md
+
+version: '3.8'
+
+# This configuration combines infrastructure and services for local production testing
+# In actual production, these are deployed as separate Portainer stacks
+
+services:
+  # Infrastructure Services
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hob-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    restart: unless-stopped
+    volumes:
+      - prometheus-data:/prometheus
+      - ./docker/data/prometheus:/etc/prometheus
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_DOMAIN:-prometheus.hob.localhost}`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hob-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-grafana}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/data/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./docker/data/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./docker/data/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN:-grafana.hob.localhost}`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: hob-jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jaeger.rule=Host(`${JAEGER_DOMAIN:-jaeger.hob.localhost}`)"
+      - "traefik.http.routers.jaeger.entrypoints=web"
+      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    container_name: hob-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD:-Password123}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql/data
+      - mssql-log:/var/opt/mssql/log
+      - mssql-backup:/var/opt/mssql/backup
+    networks:
+      - hob-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: hob-rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-local}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-local}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - hob-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq-mgmt.entrypoints=web"
+      - "traefik.http.routers.rabbitmq-mgmt.rule=Host(`${RABBITMQ_DOMAIN:-web.rabbitmq.hob.localhost}`)"
+      - "traefik.http.services.rabbitmq-mgmt.loadbalancer.server.port=15672"
+
+  traefik:
+    image: traefik:v3.1
+    container_name: hob-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - traefik-certs:/etc/traefik/certs
+    networks:
+      - hob-network
+    restart: unless-stopped
+
+  # Application Services
+  hob-api:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/tangledbootlace/hob-api:${IMAGE_TAG:-latest}
+    container_name: hob-api
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: HOB.API/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Release
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - HOB_SERVICES_ContainerPort=8080
+      - ConnectionStrings__DefaultConnection=Server=hob-db;Database=HOB;User Id=sa;Password=${SA_PASSWORD:-Password123};TrustServerCertificate=True;MultipleActiveResultSets=True;
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-local}:${RABBITMQ_PASSWORD:-local}@hob-rabbitmq:5672
+      - OpenTelemetry__ServiceName=HOB.API
+      - OpenTelemetry__JaegerEndpoint=http://hob-jaeger:4317
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - hob-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hob-api.rule=Host(`${HOB_API_DOMAIN:-hob.api.localhost}`)"
+      - "traefik.http.routers.hob-api.entrypoints=web"
+      - "traefik.http.services.hob-api.loadbalancer.server.port=8080"
+
+  hob-dashboard:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/tangledbootlace/hob-dashboard:${IMAGE_TAG:-latest}
+    container_name: hob-dashboard
+    restart: unless-stopped
+    build:
+      context: ./hob-dashboard
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://hob-api:8080
+    depends_on:
+      - hob-api
+    networks:
+      - hob-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hob-dashboard.rule=Host(`${HOB_DASHBOARD_DOMAIN:-dashboard.hob.localhost}`)"
+      - "traefik.http.routers.hob-dashboard.entrypoints=web"
+      - "traefik.http.services.hob-dashboard.loadbalancer.server.port=3000"
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  mssql-data:
+    driver: local
+  mssql-log:
+    driver: local
+  mssql-backup:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  traefik-certs:
+    driver: local
+
+networks:
+  hob-network:
+    driver: bridge
+    name: hob-network

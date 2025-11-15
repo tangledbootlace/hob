@@ -1,0 +1,155 @@
+version: '3.8'
+
+# Infrastructure Stack - Database, Message Queue, and Monitoring
+# This stack should be deployed first and remain running
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hob-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    restart: unless-stopped
+    volumes:
+      - prometheus-data:/prometheus
+      - ${DATA_VOLUME_PATH}/prometheus:/etc/prometheus
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`${PROMETHEUS_DOMAIN}`)"
+      - "traefik.http.routers.prometheus.entrypoints=web"
+      - "com.hob.stack=infrastructure"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hob-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ${DATA_VOLUME_PATH}/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ${DATA_VOLUME_PATH}/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "com.hob.stack=infrastructure"
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: hob-jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jaeger.rule=Host(`${JAEGER_DOMAIN}`)"
+      - "traefik.http.routers.jaeger.entrypoints=web"
+      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+      - "com.hob.stack=infrastructure"
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    container_name: hob-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql/data
+      - mssql-log:/var/opt/mssql/log
+      - mssql-backup:/var/opt/mssql/backup
+    networks:
+      - hob-network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -C -Q "SELECT 1" -b -o /dev/null
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    labels:
+      - "com.hob.stack=infrastructure"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: hob-rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - hob-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq-mgmt.entrypoints=web"
+      - "traefik.http.routers.rabbitmq-mgmt.rule=Host(`${RABBITMQ_DOMAIN}`)"
+      - "traefik.http.services.rabbitmq-mgmt.loadbalancer.server.port=15672"
+      - "com.hob.stack=infrastructure"
+
+  traefik:
+    image: traefik:v3.1
+    container_name: hob-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - traefik-certs:/etc/traefik/certs
+    networks:
+      - hob-network
+    restart: unless-stopped
+    labels:
+      - "com.hob.stack=infrastructure"
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  mssql-data:
+    driver: local
+  mssql-log:
+    driver: local
+  mssql-backup:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  traefik-certs:
+    driver: local
+
+networks:
+  hob-network:
+    driver: bridge
+    name: hob-network
