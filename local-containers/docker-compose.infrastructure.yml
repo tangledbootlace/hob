@@ -6,7 +6,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
     restart: unless-stopped
     volumes:
-      - ./docker/data/prometheus:/etc/prometheus
+      - ./data/prometheus:/etc/prometheus
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`prometheus.hob.localhost`)"
@@ -19,9 +19,9 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=grafana
     volumes:
-      - ./docker/data/grafana/datasources:/etc/grafana/provisioning/datasources
-      - ./docker/data/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yaml
-      - ./docker/data/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./data/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./data/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./data/grafana/dashboards:/var/lib/grafana/dashboards
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.hob.localhost`)"
@@ -51,7 +51,7 @@ services:
     ports:
       - 1433:1433
     volumes:
-      - ./docker/data/mssql/data:/var/opt/mssql/data
+      - ./data/mssql/data:/var/opt/mssql/data
     restart: always
     healthcheck:
       test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${SA_PASSWORD}" -C -Q "SELECT 1" -b -o /dev/null
