@@ -21,3 +21,34 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-services-users.rule=Host(`hob.api.localhost`)"
       - "traefik.http.routers.backend-services-users.entrypoints=web"
+    networks:
+      - hob-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: HOB.Worker/Dockerfile
+    image: hob-worker:latest
+    container_name: hob-worker
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      rabbitmq:
+        condition: service_healthy
+        restart: true
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Database=HOB;User Id=sa;Password=Password123;TrustServerCertificate=True;
+      - ConnectionStrings__RabbitMQ=amqp://local:local@rabbitmq:5672
+      - ReportSettings__OutputDirectory=/reports
+    volumes:
+      - ./reports:/reports
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=false"
+
+networks:
+  hob-network:
+    external: true
