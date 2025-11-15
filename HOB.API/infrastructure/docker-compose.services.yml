@@ -1,0 +1,66 @@
+version: '3.8'
+
+# Services Stack - API and Dashboard
+# Deploy after infrastructure stack is healthy
+
+services:
+  hob-api:
+    image: ${DOCKER_REGISTRY}/tangledbootlace/hob-api:${IMAGE_TAG}
+    container_name: hob-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:8080
+      - HOB_SERVICES_ContainerPort=8080
+      - ConnectionStrings__DefaultConnection=Server=hob-db;Database=HOB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True;
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@hob-rabbitmq:5672
+      - OpenTelemetry__ServiceName=HOB.API
+      - OpenTelemetry__JaegerEndpoint=http://hob-jaeger:4317
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - hob-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hob-api.rule=Host(`${HOB_API_DOMAIN}`)"
+      - "traefik.http.routers.hob-api.entrypoints=web"
+      - "traefik.http.services.hob-api.loadbalancer.server.port=8080"
+      - "com.hob.stack=services"
+      - "com.hob.service=api"
+
+  hob-dashboard:
+    image: ${DOCKER_REGISTRY}/tangledbootlace/hob-dashboard:${IMAGE_TAG}
+    container_name: hob-dashboard
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://hob-api:8080
+    depends_on:
+      - hob-api
+    networks:
+      - hob-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hob-dashboard.rule=Host(`${HOB_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.routers.hob-dashboard.entrypoints=web"
+      - "traefik.http.services.hob-dashboard.loadbalancer.server.port=3000"
+      - "com.hob.stack=services"
+      - "com.hob.service=dashboard"
+
+networks:
+  hob-network:
+    external: true
+    name: hob-network

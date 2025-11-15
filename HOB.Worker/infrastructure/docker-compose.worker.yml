@@ -1,0 +1,37 @@
+version: '3.8'
+
+# Worker Job - Report Generation Service
+# This service is designed to run as a scheduled job (cron)
+# It processes messages from RabbitMQ and shuts down gracefully when the queue is empty
+
+services:
+  hob-worker:
+    image: ${DOCKER_REGISTRY}/tangledbootlace/hob-worker:${IMAGE_TAG}
+    container_name: hob-worker-${RUN_ID:-manual}
+    restart: "no"  # Don't restart - this is a job, not a service
+    environment:
+      - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT:-Production}
+      - ConnectionStrings__DefaultConnection=Server=hob-db;Database=HOB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True;
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@hob-rabbitmq:5672
+      - ReportSettings__OutputDirectory=/reports
+      - OpenTelemetry__ServiceName=HOB.Worker
+      - OpenTelemetry__JaegerEndpoint=http://hob-jaeger:4317
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft=Warning
+      - Logging__LogLevel__MassTransit=Information
+    volumes:
+      - ${REPORTS_VOLUME_PATH}:/reports
+    networks:
+      - hob-network
+    depends_on:
+      - db
+      - rabbitmq
+    labels:
+      - "com.hob.stack=worker"
+      - "com.hob.service=report-generator"
+      - "com.hob.run-id=${RUN_ID:-manual}"
+
+networks:
+  hob-network:
+    external: true
+    name: hob-network

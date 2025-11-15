@@ -1,0 +1,39 @@
+# Portainer Configuration
+portainer_url         = "https://portainer.yourdomain.com"
+portainer_username    = "admin"
+portainer_password    = "your-secure-password"
+portainer_endpoint_id = 1
+
+# Environment Configuration
+environment = "production"
+
+# Domain Configuration
+hob_api_domain       = "api.hob.yourdomain.com"
+hob_dashboard_domain = "hob.yourdomain.com"
+grafana_domain       = "grafana.hob.yourdomain.com"
+prometheus_domain    = "prometheus.hob.yourdomain.com"
+jaeger_domain        = "jaeger.hob.yourdomain.com"
+rabbitmq_domain      = "rabbitmq.hob.yourdomain.com"
+
+# Database Configuration
+db_password = "YourSecurePassword123!"
+
+# RabbitMQ Configuration
+rabbitmq_user     = "hob"
+rabbitmq_password = "SecureRabbitMQPassword"
+
+# Grafana Configuration
+grafana_admin_password = "SecureGrafanaPassword"
+
+# Docker Registry Configuration
+docker_registry          = "ghcr.io"
+docker_registry_username = "your-github-username"
+docker_registry_password = "your-github-token"
+image_tag                = "latest"
+
+# Worker Configuration
+worker_schedule = "*/5 * * * *"  # Every 5 minutes
+
+# Volume Configuration
+data_volume_path    = "/opt/hob/data"
+reports_volume_path = "/opt/hob/reports"

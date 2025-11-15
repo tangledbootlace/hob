@@ -1,0 +1,137 @@
+variable "portainer_url" {
+  description = "Portainer server URL"
+  type        = string
+  sensitive   = false
+}
+
+variable "portainer_username" {
+  description = "Portainer admin username"
+  type        = string
+  sensitive   = true
+}
+
+variable "portainer_password" {
+  description = "Portainer admin password"
+  type        = string
+  sensitive   = true
+}
+
+variable "portainer_endpoint_id" {
+  description = "Portainer endpoint ID where stacks will be deployed"
+  type        = number
+  default     = 1
+}
+
+variable "environment" {
+  description = "Environment name (dev, staging, production)"
+  type        = string
+  default     = "production"
+}
+
+variable "hob_api_domain" {
+  description = "Domain for the HOB API"
+  type        = string
+  default     = "hob.api.localhost"
+}
+
+variable "hob_dashboard_domain" {
+  description = "Domain for the HOB Dashboard"
+  type        = string
+  default     = "dashboard.hob.localhost"
+}
+
+variable "grafana_domain" {
+  description = "Domain for Grafana"
+  type        = string
+  default     = "grafana.hob.localhost"
+}
+
+variable "prometheus_domain" {
+  description = "Domain for Prometheus"
+  type        = string
+  default     = "prometheus.hob.localhost"
+}
+
+variable "jaeger_domain" {
+  description = "Domain for Jaeger"
+  type        = string
+  default     = "jaeger.hob.localhost"
+}
+
+variable "rabbitmq_domain" {
+  description = "Domain for RabbitMQ management UI"
+  type        = string
+  default     = "web.rabbitmq.hob.localhost"
+}
+
+variable "db_password" {
+  description = "SQL Server SA password"
+  type        = string
+  sensitive   = true
+  default     = "Password123"
+}
+
+variable "rabbitmq_user" {
+  description = "RabbitMQ username"
+  type        = string
+  sensitive   = false
+  default     = "local"
+}
+
+variable "rabbitmq_password" {
+  description = "RabbitMQ password"
+  type        = string
+  sensitive   = true
+  default     = "local"
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password"
+  type        = string
+  sensitive   = true
+  default     = "grafana"
+}
+
+variable "docker_registry" {
+  description = "Docker registry for application images"
+  type        = string
+  default     = "ghcr.io"
+}
+
+variable "docker_registry_username" {
+  description = "Docker registry username"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "docker_registry_password" {
+  description = "Docker registry password/token"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "image_tag" {
+  description = "Docker image tag to deploy"
+  type        = string
+  default     = "latest"
+}
+
+variable "worker_schedule" {
+  description = "Cron schedule for worker job (every 5 minutes)"
+  type        = string
+  default     = "*/5 * * * *"
+}
+
+variable "data_volume_path" {
+  description = "Host path for persistent data storage"
+  type        = string
+  default     = "/opt/hob/data"
+}
+
+variable "reports_volume_path" {
+  description = "Host path for worker report output"
+  type        = string
+  default     = "/opt/hob/reports"
+}
