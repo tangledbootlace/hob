@@ -15,6 +15,7 @@ using HOB.API.Sales.ListSales;
 using HOB.API.Sales.UpdateSale;
 using HOB.API.Sales.DeleteSale;
 using HOB.API.Reports.GenerateReport;
+using HOB.API.Dashboard.GetDashboardSummary;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -314,5 +315,18 @@ public static class WebApplicationExtensions
             })
             .WithOpenApi()
             .WithName("GenerateReport");
+    }
+
+    public static void UseDashboardApi(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/dashboard").WithTags("Dashboard");
+
+        group.MapGet("/summary", async ([FromServices] IMediator mediator) =>
+            {
+                var response = await mediator.Send(new GetDashboardSummaryRequest());
+                return Results.Ok(response);
+            })
+            .WithOpenApi()
+            .WithName("GetDashboardSummary");
     }
 }

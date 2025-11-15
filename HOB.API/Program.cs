@@ -45,6 +45,8 @@ app.UseSaleApi();
 
 app.UseReportApi();
 
+app.UseDashboardApi();
+
 app.UseHealthCheckRouting();
 
 app.Run();

@@ -49,6 +49,25 @@ services:
     labels:
       - "traefik.enable=false"
 
+  dashboard:
+    build:
+      context: ./hob-dashboard
+      dockerfile: Dockerfile
+    image: hob-dashboard:latest
+    container_name: hob-dashboard
+    depends_on:
+      - hob.api
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://hob.api:8080
+    networks:
+      - hob-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.hob.localhost`)"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
+
 networks:
   hob-network:
     external: true
