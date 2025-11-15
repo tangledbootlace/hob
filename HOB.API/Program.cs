@@ -1,6 +1,7 @@
 using HOB.Common.Library.Shared;
 using HOB.Common.Library.Observability.HealthChecks;
 using HOB.Common.Library.Observability.Telemetry;
+using HOB.Common.Library.Observability.Metrics;
 using HOB.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,13 +21,13 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 
 builder.Services.AddOpenTelemetryTracing(builder.Configuration);
 
-//TODO: add service metrics middleware
+builder.Services.AddPrometheusMetrics();
 
 var app = builder.Build();
 
 app.UseCustomExceptionHandling();
 
-//TODO: use metrics middleware
+app.UsePrometheusMetrics();
 
 app.UseSwaggerDashboard();
 
