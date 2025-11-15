@@ -17,6 +17,10 @@ builder.Services.AddSwaggerDashboard();
 
 builder.Services.AddServiceHealthChecks(builder.Configuration);
 
+builder.Services.AddDatabase(builder.Configuration);
+
+builder.Services.AddMassTransitWithRabbitMq(builder.Configuration);
+
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 builder.Services.AddOpenTelemetryTracing(builder.Configuration);
@@ -32,6 +36,14 @@ app.UsePrometheusMetrics();
 app.UseSwaggerDashboard();
 
 app.UseTestApi();
+
+app.UseCustomerApi();
+
+app.UseOrderApi();
+
+app.UseSaleApi();
+
+app.UseReportApi();
 
 app.UseHealthCheckRouting();
 

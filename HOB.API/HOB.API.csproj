@@ -2,11 +2,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HOB.Common\HOB.Common.Library\HOB.Common.Library.csproj" />
+    <ProjectReference Include="..\HOB.Data\HOB.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
+    <PackageReference Include="MassTransit" Version="8.3.4" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.4" />
   </ItemGroup>
 
   <PropertyGroup>
