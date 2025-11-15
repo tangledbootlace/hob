@@ -1,5 +1,7 @@
 using HOB.Common.Library.Shared;
 using HOB.Common.Library.Observability.HealthChecks;
+using HOB.Common.Library.Observability.Telemetry;
+using HOB.Common.Library.Observability.Metrics;
 using HOB.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,19 +15,19 @@ builder.WebHost.ConfigureKestrel(x =>
 builder.Services.AddCustomProblemDetails();
 builder.Services.AddSwaggerDashboard();
 
-builder.Services.AddServiceHealthChecks();
+builder.Services.AddServiceHealthChecks(builder.Configuration);
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
-//TODO: add DI services
+builder.Services.AddOpenTelemetryTracing(builder.Configuration);
 
-//TODO: add service metrics middleware
+builder.Services.AddPrometheusMetrics();
 
 var app = builder.Build();
 
 app.UseCustomExceptionHandling();
 
-//TODO: use metrics middleware
+app.UsePrometheusMetrics();
 
 app.UseSwaggerDashboard();
 
