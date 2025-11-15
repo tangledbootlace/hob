@@ -16,34 +16,36 @@ A modern .NET 9.0 microservices application with observability-first architectur
 
 ```
 hob/
-├── src/                          # Application source code
-│   ├── hob.sln                   # .NET solution file
-│   ├── HOB.API/                  # REST API project
-│   ├── HOB.Data/                 # Entity Framework Core data layer
-│   ├── HOB.Worker/               # Background worker service
-│   └── HOB.Common/               # Shared libraries and utilities
-├── hob-dashboard/                # Next.js dashboard UI
-├── local-containers/             # Local development Docker setup
-│   ├── docker-compose.yml        # Main compose file
+├── src/                                    # Application source code
+│   ├── back-end-dotnet/                    # .NET backend projects
+│   │   ├── hob.sln                         # .NET solution file
+│   │   ├── HOB.API/                        # REST API project
+│   │   ├── HOB.Data/                       # Entity Framework Core data layer
+│   │   ├── HOB.Worker/                     # Background worker service
+│   │   └── HOB.Common/                     # Shared libraries and utilities
+│   └── front-end-nextjs/                   # Next.js frontend projects
+│       └── hob-dashboard/                  # Next.js dashboard UI
+├── local-containers/                       # Local development Docker setup
+│   ├── docker-compose.yml                  # Main compose file
 │   ├── docker-compose.infrastructure.yml
 │   ├── docker-compose.service.yml
-│   ├── .env.example              # Environment variables template
-│   └── data/                     # Persistent data volumes
-├── infrastructure/               # Production infrastructure
-│   ├── terraform/                # Terraform configurations
+│   ├── .env.example                        # Environment variables template
+│   └── data/                               # Persistent data volumes
+├── infrastructure/                         # Production infrastructure
+│   ├── terraform/                          # Terraform configurations
 │   ├── docker-compose.production.yml
 │   ├── docker-compose.infrastructure.yml
 │   ├── docker-compose.services.yml
 │   ├── docker-compose.worker.yml
-│   ├── run-worker.sh             # Worker execution script
-│   └── .env.example              # Production environment template
-├── docs/                         # Comprehensive documentation
-│   ├── Home.md                   # Documentation hub
+│   ├── run-worker.sh                       # Worker execution script
+│   └── .env.example                        # Production environment template
+├── docs/                                   # Comprehensive documentation
+│   ├── Home.md                             # Documentation hub
 │   ├── Infrastructure-Setup.md
 │   ├── Deployment-and-Operations.md
-│   └── ...                       # Additional guides
-├── .github/workflows/            # CI/CD workflows
-└── CLAUDE.md                     # Development guide for Claude Code
+│   └── ...                                 # Additional guides
+├── .github/workflows/                      # CI/CD workflows
+└── CLAUDE.md                               # Development guide for Claude Code
 ```
 
 ## 🏗️ Architecture
@@ -121,7 +123,7 @@ hob/
 ### Building from Source
 
 ```bash
-cd src
+cd src/back-end-dotnet
 dotnet restore hob.sln
 dotnet build hob.sln
 dotnet run --project HOB.API
@@ -142,14 +144,14 @@ Comprehensive documentation is available in the [docs/](docs/) folder:
 ### Running Tests
 
 ```bash
-cd src
+cd src/back-end-dotnet
 dotnet test
 ```
 
 ### Database Migrations
 
 ```bash
-cd src/HOB.Data
+cd src/back-end-dotnet/HOB.Data
 dotnet ef migrations add MigrationName
 dotnet ef database update
 ```

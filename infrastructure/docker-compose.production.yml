@@ -140,7 +140,7 @@ services:
     container_name: hob-api
     restart: unless-stopped
     build:
-      context: .
+      context: ../src/back-end-dotnet
       dockerfile: HOB.API/Dockerfile
       args:
         - BUILD_CONFIGURATION=Release
@@ -176,7 +176,7 @@ services:
     container_name: hob-dashboard
     restart: unless-stopped
     build:
-      context: ./hob-dashboard
+      context: ../src/front-end-nextjs/hob-dashboard
       dockerfile: Dockerfile
     environment:
       - NODE_ENV=production

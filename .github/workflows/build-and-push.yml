@@ -64,8 +64,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./HOB.API/Dockerfile
+          context: ./src/back-end-dotnet
+          file: ./src/back-end-dotnet/HOB.API/Dockerfile
           push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_images != 'false') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -112,8 +112,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./HOB.Worker/Dockerfile
+          context: ./src/back-end-dotnet
+          file: ./src/back-end-dotnet/HOB.Worker/Dockerfile
           push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_images != 'false') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -158,8 +158,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./hob-dashboard
-          file: ./hob-dashboard/Dockerfile
+          context: ./src/front-end-nextjs/hob-dashboard
+          file: ./src/front-end-nextjs/hob-dashboard/Dockerfile
           push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_images != 'false') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -10,20 +10,22 @@ House of Burgesses Services (HOB) is a .NET 9.0 ASP.NET Core Web API project wit
 
 ```
 hob/
-├── src/                          # Application source code
-│   ├── hob.sln                   # .NET solution file
-│   ├── HOB.API/                  # ASP.NET Core Web API
-│   ├── HOB.Data/                 # Entity Framework Core data layer
-│   ├── HOB.Worker/               # Background worker service
-│   └── HOB.Common/               # Shared library
-├── hob-dashboard/                # Next.js dashboard UI
-├── local-containers/             # Local development Docker setup
+├── src/                                    # Application source code
+│   ├── back-end-dotnet/                    # .NET backend projects
+│   │   ├── hob.sln                         # .NET solution file
+│   │   ├── HOB.API/                        # ASP.NET Core Web API
+│   │   ├── HOB.Data/                       # Entity Framework Core data layer
+│   │   ├── HOB.Worker/                     # Background worker service
+│   │   └── HOB.Common/                     # Shared library
+│   └── front-end-nextjs/                   # Next.js frontend projects
+│       └── hob-dashboard/                  # Next.js dashboard UI
+├── local-containers/                       # Local development Docker setup
 │   ├── docker-compose.yml
 │   ├── docker-compose.infrastructure.yml
 │   ├── docker-compose.service.yml
 │   ├── .env.example
-│   └── data/                     # Persistent data volumes
-├── infrastructure/               # Production infrastructure
+│   └── data/                               # Persistent data volumes
+├── infrastructure/                         # Production infrastructure
 │   ├── terraform/
 │   ├── docker-compose.production.yml
 │   ├── docker-compose.infrastructure.yml
@@ -31,24 +33,25 @@ hob/
 │   ├── docker-compose.worker.yml
 │   ├── run-worker.sh
 │   └── .env.example
-├── docs/                         # Comprehensive documentation
-└── .github/workflows/            # CI/CD workflows
+├── docs/                                   # Comprehensive documentation
+└── .github/workflows/                      # CI/CD workflows
 ```
 
 ### Solution Projects
 
-- **HOB.API** (`src/HOB.API/`): ASP.NET Core Web API with CRUD endpoints
-- **HOB.Data** (`src/HOB.Data/`): Entity Framework Core data layer with entities and DbContext
-- **HOB.Worker** (`src/HOB.Worker/`): Console application for asynchronous report generation
-- **HOB.Common** (`src/HOB.Common/`): Shared library with cross-cutting concerns
+- **HOB.API** (`src/back-end-dotnet/HOB.API/`): ASP.NET Core Web API with CRUD endpoints
+- **HOB.Data** (`src/back-end-dotnet/HOB.Data/`): Entity Framework Core data layer with entities and DbContext
+- **HOB.Worker** (`src/back-end-dotnet/HOB.Worker/`): Console application for asynchronous report generation
+- **HOB.Common** (`src/back-end-dotnet/HOB.Common/`): Shared library with cross-cutting concerns
+- **hob-dashboard** (`src/front-end-nextjs/hob-dashboard/`): Next.js dashboard UI
 
 ## Build and Development Commands
 
 ### Building the Project
 
 ```bash
-# Navigate to source directory
-cd src
+# Navigate to backend source directory
+cd src/back-end-dotnet
 
 # Build the solution
 dotnet build hob.sln
@@ -107,7 +110,9 @@ All services are routed through Traefik reverse proxy:
 
 All application code is located in the `src/` directory:
 
-- **src/HOB.API**: Main API project containing endpoints and application-specific logic
+#### Backend (.NET)
+
+- **src/back-end-dotnet/HOB.API**: Main API project containing endpoints and application-specific logic
   - `Customers/`: Customer CRUD endpoints (Create, Get, List, Update, Delete)
   - `Orders/`: Order CRUD endpoints (Create, Get, List, Update, Delete)
   - `Sales/`: Sale CRUD endpoints (Create, Get, List, Update, Delete)
@@ -115,20 +120,27 @@ All application code is located in the `src/` directory:
   - `Dashboard/`: Dashboard summary endpoint
   - `Extensions/`: Service registration and endpoint mapping
   - `Dockerfile`: Container image definition
-- **src/HOB.Data**: Entity Framework Core data access layer
+- **src/back-end-dotnet/HOB.Data**: Entity Framework Core data access layer
   - `Entities/`: Domain entities (Customer, Order, Sale)
   - `HobDbContext.cs`: EF Core DbContext with fluent configuration and seed data
-- **src/HOB.Worker**: Console application for asynchronous tasks
+- **src/back-end-dotnet/HOB.Worker**: Console application for asynchronous tasks
   - `Consumers/`: MassTransit message consumers
   - `Observers/`: Queue drain observer for graceful shutdown
   - `Services/`: CSV report generation service
   - `Dockerfile`: Container image definition
-- **src/HOB.Common**: Shared library with cross-cutting concerns
+- **src/back-end-dotnet/HOB.Common**: Shared library with cross-cutting concerns
   - `Messages/`: MassTransit message contracts
   - `Observability/Healthchecks`: Health check configuration
   - `Observability/Telemetry`: OpenTelemetry tracing
   - `Observability/Metrics`: Prometheus metrics
   - `Shared`: Common utilities (problem details, Swagger, exception handling)
+
+#### Frontend (Next.js)
+
+- **src/front-end-nextjs/hob-dashboard**: Next.js dashboard UI
+  - `app/`: Next.js 14 app directory with routing
+  - `components/`: Reusable React components
+  - `Dockerfile`: Container image definition
 
 ### Key Architectural Patterns
 
@@ -152,7 +164,7 @@ All application code is located in the `src/` directory:
 └── [FeatureName]Response.cs
 ```
 
-See `src/HOB.API/GetTestEndpoint/` for reference implementation.
+See `src/back-end-dotnet/HOB.API/GetTestEndpoint/` for reference implementation.
 
 **Extension Methods**: Service registration and middleware configuration use extension methods:
 - `ServiceCollectionExtensions.cs` for `IServiceCollection` extensions
@@ -169,18 +181,18 @@ See `src/HOB.API/GetTestEndpoint/` for reference implementation.
 The API listens on a port configured via environment variable `HOB_SERVICES_ContainerPort` (default: 8080).
 
 Application settings are in:
-- `src/HOB.API/appsettings.json`: Base configuration
-- `src/HOB.API/appsettings.Development.json`: Development overrides
+- `src/back-end-dotnet/HOB.API/appsettings.json`: Base configuration
+- `src/back-end-dotnet/HOB.API/appsettings.Development.json`: Development overrides
 
 ### Adding New Endpoints
 
-1. Create a new folder in `src/HOB.API` for your feature
+1. Create a new folder in `src/back-end-dotnet/HOB.API` for your feature
 2. Create Request, Response, and RequestHandler classes following MediatR pattern
 3. Register the endpoint in a new or existing `WebApplicationExtensions.cs` method
 4. Use `.WithOpenApi()` to include in Swagger documentation
 5. Register handler via MediatR (auto-registered from assembly scan in Program.cs)
 
-See `src/HOB.API/GetTestEndpoint/` for a reference implementation.
+See `src/back-end-dotnet/HOB.API/GetTestEndpoint/` for a reference implementation.
 
 ### Infrastructure Dependencies
 
@@ -242,9 +254,9 @@ The HOB.Worker is a console application designed to run as a scheduled job:
 
 Currently, no test projects exist in the solution. When adding tests:
 - Use xUnit as the testing framework (standard for .NET)
-- Name test projects as `[ProjectName].Tests` and place in `src/` directory
-- Add test projects to `src/hob.sln`
-- Run tests with: `cd src && dotnet test`
+- Name test projects as `[ProjectName].Tests` and place in `src/back-end-dotnet/` directory
+- Add test projects to `src/back-end-dotnet/hob.sln`
+- Run tests with: `cd src/back-end-dotnet && dotnet test`
 
 ## Environment Configuration
 
@@ -273,7 +285,7 @@ For more detailed information, see:
 
 ## TODO Items in Code
 
-The following items are marked as TODO in `src/HOB.API/Program.cs`:
+The following items are marked as TODO in `src/back-end-dotnet/HOB.API/Program.cs`:
 - Add DI services (line 20)
 - Add service metrics middleware (line 22)
 - Use metrics middleware (line 28)
