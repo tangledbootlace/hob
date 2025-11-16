@@ -116,7 +116,7 @@ public class ListProductsRequestHandlerTests : IDisposable
 
         // Assert
         response.Should().NotBeNull();
-        response.Products.Should().HaveCount(4);
+        response.Items.Should().HaveCount(4);
         response.TotalItems.Should().Be(4);
         response.TotalPages.Should().Be(1);
         response.Page.Should().Be(1);
@@ -140,8 +140,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(3);
-        response.Products.Should().OnlyContain(p => p.IsActive);
+        response.Items.Should().HaveCount(3);
+        response.Items.Should().OnlyContain(p => p.IsActive);
         response.TotalItems.Should().Be(3);
     }
 
@@ -162,8 +162,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(1);
-        response.Products.First().Name.Should().Contain("Laptop");
+        response.Items.Should().HaveCount(1);
+        response.Items.First().Name.Should().Contain("Laptop");
     }
 
     [Fact]
@@ -183,8 +183,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(1);
-        response.Products.First().SKU.Should().Be("MOUSE-001");
+        response.Items.Should().HaveCount(1);
+        response.Items.First().SKU.Should().Be("MOUSE-001");
     }
 
     [Fact]
@@ -204,8 +204,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(2); // Mouse and Chair
-        response.Products.Should().OnlyContain(p => p.Description!.Contains("Ergonomic"));
+        response.Items.Should().HaveCount(2); // Mouse and Chair
+        response.Items.Should().OnlyContain(p => p.Description!.Contains("Ergonomic"));
     }
 
     [Fact]
@@ -225,8 +225,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(2);
-        response.Products.Should().OnlyContain(p => p.Category == "Electronics");
+        response.Items.Should().HaveCount(2);
+        response.Items.Should().OnlyContain(p => p.Category == "Electronics");
     }
 
     [Fact]
@@ -246,8 +246,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(2); // Mouse (5 <= 10) and Chair (0 <= 5)
-        response.Products.Should().OnlyContain(p => p.IsLowStock);
+        response.Items.Should().HaveCount(2); // Mouse (5 <= 10) and Chair (0 <= 5)
+        response.Items.Should().OnlyContain(p => p.IsLowStock);
     }
 
     [Fact]
@@ -267,10 +267,10 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        var laptop = response.Products.First(p => p.SKU == "LAPTOP-001");
+        var laptop = response.Items.First(p => p.SKU == "LAPTOP-001");
         laptop.IsLowStock.Should().BeFalse(); // 50 > 10
 
-        var mouse = response.Products.First(p => p.SKU == "MOUSE-001");
+        var mouse = response.Items.First(p => p.SKU == "MOUSE-001");
         mouse.IsLowStock.Should().BeTrue(); // 5 <= 10
     }
 
@@ -291,7 +291,7 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(2);
+        response.Items.Should().HaveCount(2);
         response.TotalItems.Should().Be(4);
         response.TotalPages.Should().Be(2);
         response.Page.Should().Be(1);
@@ -314,7 +314,7 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(2);
+        response.Items.Should().HaveCount(2);
         response.TotalItems.Should().Be(4);
         response.TotalPages.Should().Be(2);
         response.Page.Should().Be(2);
@@ -337,7 +337,7 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().BeInAscendingOrder(p => p.Name);
+        response.Items.Should().BeInAscendingOrder(p => p.Name);
     }
 
     [Fact]
@@ -357,8 +357,8 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().HaveCount(1); // Only Mouse matches all criteria
-        response.Products.First().SKU.Should().Be("MOUSE-001");
+        response.Items.Should().HaveCount(1); // Only Mouse matches all criteria
+        response.Items.First().SKU.Should().Be("MOUSE-001");
     }
 
     [Fact]
@@ -378,7 +378,7 @@ public class ListProductsRequestHandlerTests : IDisposable
         var response = await _handler.Handle(request, CancellationToken.None);
 
         // Assert
-        response.Products.Should().BeEmpty();
+        response.Items.Should().BeEmpty();
         response.TotalItems.Should().Be(0);
         response.TotalPages.Should().Be(0);
     }
