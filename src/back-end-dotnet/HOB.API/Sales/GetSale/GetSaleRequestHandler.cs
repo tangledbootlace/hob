@@ -35,6 +35,7 @@ public class GetSaleRequestHandler : IRequestHandler<GetSaleRequest, GetSaleResp
         return new GetSaleResponse(
             sale.SaleId,
             sale.OrderId,
+            sale.ProductId,
             sale.ProductName,
             sale.Quantity,
             sale.UnitPrice,

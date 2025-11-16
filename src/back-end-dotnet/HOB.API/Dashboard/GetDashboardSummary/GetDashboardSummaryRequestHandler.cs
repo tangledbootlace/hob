@@ -19,6 +19,7 @@ public class GetDashboardSummaryRequestHandler : IRequestHandler<GetDashboardSum
         var totalCustomers = await _dbContext.Customers.CountAsync(cancellationToken);
         var totalOrders = await _dbContext.Orders.CountAsync(cancellationToken);
         var totalSales = await _dbContext.Sales.CountAsync(cancellationToken);
+        var totalProducts = await _dbContext.Products.Where(p => p.IsActive).CountAsync(cancellationToken);
 
         // Get total revenue
         var totalRevenue = await _dbContext.Orders.SumAsync(o => o.TotalAmount, cancellationToken);
@@ -62,14 +63,29 @@ public class GetDashboardSummaryRequestHandler : IRequestHandler<GetDashboardSum
             .OrderBy(x => x.Date)
             .ToListAsync(cancellationToken);
 
+        // Get low stock products
+        var lowStockProducts = await _dbContext.Products
+            .Where(p => p.IsActive && p.StockQuantity <= p.LowStockThreshold)
+            .OrderBy(p => p.StockQuantity)
+            .Select(p => new LowStockProduct(
+                p.ProductId,
+                p.SKU,
+                p.Name,
+                p.StockQuantity,
+                p.LowStockThreshold
+            ))
+            .ToListAsync(cancellationToken);
+
         return new GetDashboardSummaryResponse(
             totalCustomers,
             totalOrders,
             totalSales,
+            totalProducts,
             totalRevenue,
             recentOrders,
             revenueStatus,
-            ordersLast30Days
+            ordersLast30Days,
+            lowStockProducts
         );
     }
 }

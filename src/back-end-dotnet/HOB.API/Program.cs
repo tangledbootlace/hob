@@ -41,6 +41,8 @@ app.UseOrderApi();
 
 app.UseSaleApi();
 
+app.UseProductApi();
+
 app.UseReportApi();
 
 app.UseDashboardApi();

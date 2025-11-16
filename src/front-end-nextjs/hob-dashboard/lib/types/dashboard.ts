@@ -2,10 +2,12 @@ export interface DashboardSummary {
   totalCustomers: number;
   totalOrders: number;
   totalSales: number;
+  totalProducts: number;
   totalRevenue: number;
   recentOrders: RecentOrderSummary[];
   revenueByStatus: RevenueByStatus;
   ordersLast30Days: DailyOrderStats[];
+  lowStockProducts: LowStockProduct[];
 }
 
 export interface RecentOrderSummary {
@@ -26,4 +28,12 @@ export interface DailyOrderStats {
   date: string;
   count: number;
   revenue: number;
+}
+
+export interface LowStockProduct {
+  productId: string;
+  sku: string;
+  name: string;
+  stockQuantity: number;
+  lowStockThreshold: number;
 }

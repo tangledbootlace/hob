@@ -11,6 +11,7 @@ public record ListSalesResponse(
 public record SaleItem(
     Guid SaleId,
     Guid OrderId,
+    Guid ProductId,
     string ProductName,
     int Quantity,
     decimal UnitPrice,

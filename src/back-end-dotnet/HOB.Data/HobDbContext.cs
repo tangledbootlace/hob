@@ -12,6 +12,7 @@ public class HobDbContext : DbContext
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Sale> Sales => Set<Sale>();
+    public DbSet<Product> Products => Set<Product>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -106,7 +107,60 @@ public class HobDbContext : DbContext
                 .IsRequired();
 
             entity.HasIndex(e => e.OrderId);
+            entity.HasIndex(e => e.ProductId);
             entity.HasIndex(e => e.ProductName);
+
+            // Configure relationship with Product
+            entity.HasOne(e => e.Product)
+                .WithMany(e => e.Sales)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure Product entity
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.HasKey(e => e.ProductId);
+
+            entity.Property(e => e.SKU)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasIndex(e => e.SKU)
+                .IsUnique();
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(1000);
+
+            entity.Property(e => e.UnitPrice)
+                .IsRequired()
+                .HasPrecision(18, 2);
+
+            entity.Property(e => e.StockQuantity)
+                .IsRequired();
+
+            entity.Property(e => e.LowStockThreshold)
+                .IsRequired();
+
+            entity.Property(e => e.Category)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.IsActive)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.Property(e => e.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
         });
 
         // Seed data for development
@@ -137,6 +191,71 @@ public class HobDbContext : DbContext
                 Phone = "555-0200",
                 CreatedAt = new DateTime(2025, 1, 2, 10, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2025, 1, 2, 10, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed Products
+        var productAId = Guid.Parse("30000000-3000-3000-3000-300000000001");
+        var productBId = Guid.Parse("30000000-3000-3000-3000-300000000002");
+        var productCId = Guid.Parse("30000000-3000-3000-3000-300000000003");
+        var productDId = Guid.Parse("30000000-3000-3000-3000-300000000004");
+
+        modelBuilder.Entity<Product>().HasData(
+            new Product
+            {
+                ProductId = productAId,
+                SKU = "WGT-A-001",
+                Name = "Widget A",
+                Description = "High-quality widget for general use",
+                UnitPrice = 50.00m,
+                StockQuantity = 100,
+                LowStockThreshold = 10,
+                Category = "Widgets",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new Product
+            {
+                ProductId = productBId,
+                SKU = "WGT-B-002",
+                Name = "Widget B",
+                Description = "Premium widget with advanced features",
+                UnitPrice = 50.00m,
+                StockQuantity = 50,
+                LowStockThreshold = 5,
+                Category = "Widgets",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new Product
+            {
+                ProductId = productCId,
+                SKU = "WGT-C-003",
+                Name = "Widget C",
+                Description = "Deluxe widget for professional applications",
+                UnitPrice = 75.00m,
+                StockQuantity = 8,
+                LowStockThreshold = 10,
+                Category = "Widgets",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc)
+            },
+            new Product
+            {
+                ProductId = productDId,
+                SKU = "GAD-D-004",
+                Name = "Gadget D",
+                Description = "Multi-purpose gadget for everyday tasks",
+                UnitPrice = 35.00m,
+                StockQuantity = 150,
+                LowStockThreshold = 20,
+                Category = "Gadgets",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc)
             }
         );
 
@@ -173,6 +292,7 @@ public class HobDbContext : DbContext
             {
                 SaleId = Guid.Parse("a0000000-a000-a000-a000-a00000000001"),
                 OrderId = order1Id,
+                ProductId = productAId,
                 ProductName = "Widget A",
                 Quantity = 2,
                 UnitPrice = 50.00m,
@@ -183,6 +303,7 @@ public class HobDbContext : DbContext
             {
                 SaleId = Guid.Parse("a0000000-a000-a000-a000-a00000000002"),
                 OrderId = order1Id,
+                ProductId = productBId,
                 ProductName = "Widget B",
                 Quantity = 1,
                 UnitPrice = 50.00m,
@@ -193,6 +314,7 @@ public class HobDbContext : DbContext
             {
                 SaleId = Guid.Parse("a0000000-a000-a000-a000-a00000000003"),
                 OrderId = order2Id,
+                ProductId = productCId,
                 ProductName = "Widget C",
                 Quantity = 1,
                 UnitPrice = 75.00m,

@@ -39,6 +39,7 @@ public class ListSalesRequestHandler : IRequestHandler<ListSalesRequest, ListSal
             .Select(s => new SaleItem(
                 s.SaleId,
                 s.OrderId,
+                s.ProductId,
                 s.ProductName,
                 s.Quantity,
                 s.UnitPrice,
