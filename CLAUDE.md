@@ -114,14 +114,15 @@ All application code is located in the `src/` directory:
 
 - **src/back-end-dotnet/HOB.API**: Main API project containing endpoints and application-specific logic
   - `Customers/`: Customer CRUD endpoints (Create, Get, List, Update, Delete)
-  - `Orders/`: Order CRUD endpoints (Create, Get, List, Update, Delete)
-  - `Sales/`: Sale CRUD endpoints (Create, Get, List, Update, Delete)
+  - `Products/`: Product/Inventory CRUD endpoints with stock management (Create, Get, List, Update, Delete)
+  - `Orders/`: Order CRUD endpoints with product validation (Create, Get, List, Update, Delete)
+  - `Sales/`: Sale CRUD endpoints with inventory tracking (Create, Get, List, Update, Delete)
   - `Reports/`: Report generation endpoint (triggers async worker)
-  - `Dashboard/`: Dashboard summary endpoint
+  - `Dashboard/`: Dashboard summary endpoint with low stock alerts
   - `Extensions/`: Service registration and endpoint mapping
   - `Dockerfile`: Container image definition
 - **src/back-end-dotnet/HOB.Data**: Entity Framework Core data access layer
-  - `Entities/`: Domain entities (Customer, Order, Sale)
+  - `Entities/`: Domain entities (Customer, Product, Order, Sale)
   - `HobDbContext.cs`: EF Core DbContext with fluent configuration and seed data
 - **src/back-end-dotnet/HOB.Worker**: Console application for asynchronous tasks
   - `Consumers/`: MassTransit message consumers
@@ -145,9 +146,13 @@ All application code is located in the `src/` directory:
 ### Key Architectural Patterns
 
 **Entity Framework Core**: SQL Server database with Code-First migrations
-- Entities: Customer, Order, Sale
-- Relationships: Customer → Orders → Sales (one-to-many)
-- Seed data included for development
+- Entities: Customer, Product, Order, Sale
+- Relationships:
+  - Customer → Orders (one-to-many)
+  - Order → Sales (one-to-many)
+  - Product → Sales (one-to-many)
+- Automatic inventory management: Stock quantities decrement on sale creation
+- Seed data included for development (customers, products, orders, sales)
 - Database auto-created on API startup in Development environment
 
 **MassTransit Message Bus**: RabbitMQ integration for asynchronous processing
@@ -191,8 +196,11 @@ Application settings are in:
 3. Register the endpoint in a new or existing `WebApplicationExtensions.cs` method
 4. Use `.WithOpenApi()` to include in Swagger documentation
 5. Register handler via MediatR (auto-registered from assembly scan in Program.cs)
+6. **REQUIRED**: Create comprehensive unit tests for the request handler (see Testing Requirements section)
 
 See `src/back-end-dotnet/HOB.API/GetTestEndpoint/` for a reference implementation.
+
+**Note**: Pull requests without tests will not be accepted. See the Testing Requirements section below for detailed testing standards.
 
 ### Infrastructure Dependencies
 
@@ -221,15 +229,22 @@ All endpoints are documented in Swagger UI at http://hob.api.localhost/swagger
 - `PUT /api/customers/{customerId}` - Update customer
 - `DELETE /api/customers/{customerId}` - Delete customer
 
+#### Products
+- `POST /api/products` - Create product with inventory details
+- `GET /api/products/{productId}` - Get product by ID
+- `GET /api/products` - List products (with filters: search, category, lowStock, activeOnly)
+- `PUT /api/products/{productId}` - Update product details and inventory
+- `DELETE /api/products/{productId}` - Delete product (if no associated sales)
+
 #### Orders
-- `POST /api/orders` - Create order with sales items
+- `POST /api/orders` - Create order with sales items (validates product availability and stock)
 - `GET /api/orders/{orderId}` - Get order by ID
 - `GET /api/orders` - List orders (with filters: customerId, status, date range)
 - `PUT /api/orders/{orderId}` - Update order status
 - `DELETE /api/orders/{orderId}` - Delete order (Pending/Cancelled only)
 
 #### Sales
-- `POST /api/sales` - Create sale (adds to existing order)
+- `POST /api/sales` - Create sale (validates stock, adds to existing order, decrements inventory)
 - `GET /api/sales/{saleId}` - Get sale by ID
 - `GET /api/sales` - List sales (with filters: orderId, productName)
 - `PUT /api/sales/{saleId}` - Update sale quantity/price
@@ -239,7 +254,7 @@ All endpoints are documented in Swagger UI at http://hob.api.localhost/swagger
 - `POST /api/reports/generate` - Generate sales report (async via worker)
 
 #### Dashboard
-- `GET /api/dashboard/summary` - Get dashboard summary statistics
+- `GET /api/dashboard/summary` - Get dashboard summary statistics with low stock alerts
 
 ### Worker Service
 
@@ -250,13 +265,186 @@ The HOB.Worker is a console application designed to run as a scheduled job:
 - **Lifecycle**: Starts → Processes messages → Waits 30s → Exits gracefully
 - **Queue Drain Observer**: Monitors queue and triggers shutdown after 30s of inactivity
 
-## Testing
+## Testing Requirements
 
-Currently, no test projects exist in the solution. When adding tests:
-- Use xUnit as the testing framework (standard for .NET)
-- Name test projects as `[ProjectName].Tests` and place in `src/back-end-dotnet/` directory
+**IMPORTANT: All new features and bug fixes MUST include comprehensive unit tests before opening a Pull Request.**
+
+### Testing Standards
+
+#### Backend (.NET)
+
+**Testing Framework**: Use xUnit as the testing framework (standard for .NET)
+
+**Project Structure**:
+- Name test projects as `[ProjectName].Tests` (e.g., `HOB.API.Tests`, `HOB.Data.Tests`)
+- Place test projects in `src/back-end-dotnet/` directory alongside the project being tested
 - Add test projects to `src/back-end-dotnet/hob.sln`
-- Run tests with: `cd src/back-end-dotnet && dotnet test`
+- Use the following folder structure within test projects:
+  ```
+  HOB.API.Tests/
+  ├── Customers/
+  │   ├── CreateCustomerRequestHandlerTests.cs
+  │   ├── UpdateCustomerRequestHandlerTests.cs
+  │   └── DeleteCustomerRequestHandlerTests.cs
+  ├── Products/
+  │   ├── CreateProductRequestHandlerTests.cs
+  │   └── ...
+  └── TestHelpers/
+      ├── MockDbContext.cs
+      └── TestData.cs
+  ```
+
+**Required Dependencies**:
+- `xUnit` - Testing framework
+- `Moq` or `NSubstitute` - Mocking framework
+- `FluentAssertions` - Assertion library (recommended)
+- `Microsoft.EntityFrameworkCore.InMemory` - For testing with EF Core
+
+**What Must Be Tested**:
+1. **Request Handlers** - All MediatR request handlers must have tests covering:
+   - Happy path scenarios
+   - Edge cases (empty lists, null values, boundary conditions)
+   - Error conditions (not found, validation failures, conflicts)
+   - Business logic validation
+
+2. **API Endpoints** - Test endpoint mapping and routing (integration tests)
+
+3. **Data Layer** - Test complex queries and data transformations
+
+4. **Validation Logic** - Test all validation rules (unique constraints, required fields, etc.)
+
+5. **Business Rules** - Test inventory updates, order calculations, stock validation, etc.
+
+**Test Naming Convention**:
+```csharp
+[MethodName]_[Scenario]_[ExpectedResult]
+
+Examples:
+- Handle_ValidProduct_CreatesProductSuccessfully
+- Handle_DuplicateSKU_ThrowsInvalidOperationException
+- Handle_InsufficientStock_ThrowsInvalidOperationException
+```
+
+**Running Tests**:
+```bash
+# Run all tests
+cd src/back-end-dotnet && dotnet test
+
+# Run tests with coverage
+dotnet test --collect:"XPlat Code Coverage"
+
+# Run specific test project
+dotnet test HOB.API.Tests/HOB.API.Tests.csproj
+
+# Run tests matching a pattern
+dotnet test --filter "FullyQualifiedName~Products"
+```
+
+**Example Test Structure**:
+```csharp
+public class CreateProductRequestHandlerTests
+{
+    private readonly Mock<HobDbContext> _mockDbContext;
+    private readonly Mock<ILogger<CreateProductRequestHandler>> _mockLogger;
+    private readonly CreateProductRequestHandler _handler;
+
+    public CreateProductRequestHandlerTests()
+    {
+        _mockDbContext = new Mock<HobDbContext>();
+        _mockLogger = new Mock<ILogger<CreateProductRequestHandler>>();
+        _handler = new CreateProductRequestHandler(_mockDbContext.Object, _mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task Handle_ValidProduct_CreatesProductSuccessfully()
+    {
+        // Arrange
+        var request = new CreateProductRequest(
+            SKU: "TEST-001",
+            Name: "Test Product",
+            Description: "Test Description",
+            UnitPrice: 10.00m,
+            StockQuantity: 100,
+            LowStockThreshold: 10,
+            Category: "Test"
+        );
+
+        // Act
+        var result = await _handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.SKU.Should().Be("TEST-001");
+        _mockDbContext.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_DuplicateSKU_ThrowsInvalidOperationException()
+    {
+        // Arrange - setup mock to return existing product
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _handler.Handle(request, CancellationToken.None)
+        );
+    }
+}
+```
+
+#### Frontend (Next.js/React)
+
+**Testing Framework**: Jest with React Testing Library
+
+**Project Structure**:
+- Tests are co-located with components: `ComponentName.test.tsx`
+- API layer tests: `lib/api/__tests__/`
+- Test utilities: `__tests__/utils/`
+
+**What Must Be Tested**:
+1. **API Client Functions** - Test all API calls with mocked responses
+2. **Server Actions** - Test form actions and data mutations
+3. **Components** (when complex logic exists):
+   - User interactions
+   - Conditional rendering
+   - Form validation
+
+**Running Tests**:
+```bash
+cd src/front-end-nextjs/hob-dashboard
+
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Coverage Requirements
+
+- **Minimum Coverage**: 70% code coverage for new code
+- **Critical Paths**: 90%+ coverage for business-critical features (inventory management, order processing, payment handling)
+- **Pull Request Requirement**: PR cannot be merged if tests fail or coverage drops below threshold
+
+### Before Opening a Pull Request
+
+**Checklist**:
+- [ ] All new endpoints/handlers have corresponding unit tests
+- [ ] All business logic is tested (happy path + error cases)
+- [ ] Tests pass locally: `dotnet test` (backend) and `npm test` (frontend)
+- [ ] Code coverage meets minimum requirements
+- [ ] No test warnings or skipped tests without justification
+- [ ] Integration tests added for complex workflows (optional but recommended)
+
+### CI/CD Integration
+
+All tests run automatically on:
+- Pull request creation
+- Push to PR branch
+- Merge to main branch
+
+Tests must pass before PR can be merged. See `.github/workflows/` for CI configuration.
 
 ## Environment Configuration
 
