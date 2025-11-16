@@ -65,31 +65,42 @@ variable "rabbitmq_domain" {
 }
 
 variable "db_password" {
-  description = "SQL Server SA password"
+  description = "SQL Server SA password (must be strong: min 8 chars, uppercase, lowercase, number, special char)"
   type        = string
   sensitive   = true
-  default     = "Password123"
+
+  validation {
+    condition     = can(regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$", var.db_password))
+    error_message = "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character."
+  }
 }
 
 variable "rabbitmq_user" {
   description = "RabbitMQ username"
   type        = string
   sensitive   = false
-  default     = "local"
 }
 
 variable "rabbitmq_password" {
-  description = "RabbitMQ password"
+  description = "RabbitMQ password (minimum 8 characters recommended)"
   type        = string
   sensitive   = true
-  default     = "local"
+
+  validation {
+    condition     = length(var.rabbitmq_password) >= 8
+    error_message = "RabbitMQ password must be at least 8 characters long."
+  }
 }
 
 variable "grafana_admin_password" {
-  description = "Grafana admin password"
+  description = "Grafana admin password (minimum 8 characters recommended)"
   type        = string
   sensitive   = true
-  default     = "grafana"
+
+  validation {
+    condition     = length(var.grafana_admin_password) >= 8
+    error_message = "Grafana admin password must be at least 8 characters long."
+  }
 }
 
 variable "docker_registry" {
