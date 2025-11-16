@@ -98,7 +98,7 @@ export default async function ProductDetailPage({
               <p className={`mt-1 text-2xl font-bold ${product.isLowStock ? "text-yellow-600" : ""}`}>
                 {product.stockQuantity}
                 {product.isLowStock && (
-                  <AlertTriangle className="ml-2 inline h-5 w-5" title="Low Stock Alert" />
+                  <AlertTriangle className="ml-2 inline h-5 w-5" aria-label="Low Stock Alert" />
                 )}
               </p>
             </div>

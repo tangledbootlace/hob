@@ -85,7 +85,7 @@ export default async function ProductsPage({
                       <div className="flex items-center gap-2">
                         {product.name}
                         {product.isLowStock && (
-                          <AlertTriangle className="h-4 w-4 text-yellow-500" title="Low Stock" />
+                          <AlertTriangle className="h-4 w-4 text-yellow-500" aria-label="Low Stock" />
                         )}
                       </div>
                     </TableCell>

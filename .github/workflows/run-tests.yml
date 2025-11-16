@@ -67,6 +67,10 @@ jobs:
         working-directory: src/front-end-nextjs/hob-dashboard
         run: npm ci
 
+      - name: Build Next.js application
+        working-directory: src/front-end-nextjs/hob-dashboard
+        run: npm run build
+
       - name: Run tests
         working-directory: src/front-end-nextjs/hob-dashboard
         run: npm test -- --coverage --passWithNoTests
