@@ -13,14 +13,36 @@ describe('ApiClient', () => {
   });
 
   describe('constructor', () => {
-    it('should use provided baseUrl', () => {
+    it('should create client with provided baseUrl', async () => {
       const customClient = new ApiClient('http://custom.com');
-      expect(customClient['baseUrl']).toBe('http://custom.com');
+      const mockResponse = { data: 'test' };
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      await customClient.get('/test');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://custom.com/test',
+        expect.any(Object)
+      );
     });
 
-    it('should use default baseUrl from environment', () => {
+    it('should create client with default baseUrl from environment', async () => {
       const defaultClient = new ApiClient();
-      expect(defaultClient['baseUrl']).toBe('http://localhost:3000/api');
+      const mockResponse = { data: 'test' };
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      await defaultClient.get('/test');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/api/test',
+        expect.any(Object)
+      );
     });
   });
 
