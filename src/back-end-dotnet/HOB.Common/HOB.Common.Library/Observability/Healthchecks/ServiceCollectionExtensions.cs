@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
                 name: "sqlserver",
                 tags: new[] { "db", "sql", "sqlserver" })
             .AddRabbitMQ(
-                rabbitConnectionString: rabbitMqConnection!,
+                rabbitMqConnection!,
                 name: "rabbitmq",
                 tags: new[] { "messagebus", "rabbitmq" });
     }
