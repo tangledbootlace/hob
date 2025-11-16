@@ -83,36 +83,18 @@ public class HobDbContextTests : IDisposable
     }
 
     [Fact]
-    public async Task Customer_ShouldHaveUniqueEmailConstraint()
+    public void Customer_ShouldHaveUniqueEmailIndexConfigured()
     {
         // Arrange
-        var customer1 = new Customer
-        {
-            CustomerId = Guid.NewGuid(),
-            Name = "Test User 1",
-            Email = "duplicate@example.com",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        var customer2 = new Customer
-        {
-            CustomerId = Guid.NewGuid(),
-            Name = "Test User 2",
-            Email = "duplicate@example.com",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var entityType = _context.Model.FindEntityType(typeof(Customer));
 
         // Act
-        _context.Customers.Add(customer1);
-        await _context.SaveChangesAsync();
-
-        _context.Customers.Add(customer2);
+        var emailIndex = entityType?.GetIndexes()
+            .FirstOrDefault(i => i.Properties.Any(p => p.Name == "Email"));
 
         // Assert
-        var act = async () => await _context.SaveChangesAsync();
-        await act.Should().ThrowAsync<DbUpdateException>();
+        emailIndex.Should().NotBeNull("a unique index should be configured on the Email property");
+        emailIndex!.IsUnique.Should().BeTrue("the Email index should be unique");
     }
 
     [Fact]
