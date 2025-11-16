@@ -27,16 +27,37 @@ public class CreateSaleRequestHandler : IRequestHandler<CreateSaleRequest, Creat
             throw new KeyNotFoundException($"Order with ID '{request.OrderId}' not found");
         }
 
+        // Verify product exists and get product details
+        var product = await _dbContext.Products
+            .FirstOrDefaultAsync(p => p.ProductId == request.ProductId, cancellationToken);
+
+        if (product == null)
+        {
+            throw new KeyNotFoundException($"Product with ID '{request.ProductId}' not found");
+        }
+
+        if (!product.IsActive)
+        {
+            throw new InvalidOperationException($"Product '{product.Name}' is not active and cannot be sold");
+        }
+
+        // Check if sufficient stock is available
+        if (product.StockQuantity < request.Quantity)
+        {
+            throw new InvalidOperationException($"Insufficient stock for product '{product.Name}'. Available: {product.StockQuantity}, Requested: {request.Quantity}");
+        }
+
         // Calculate total price
-        var totalPrice = request.Quantity * request.UnitPrice;
+        var totalPrice = request.Quantity * product.UnitPrice;
 
         var sale = new Sale
         {
             SaleId = Guid.NewGuid(),
             OrderId = request.OrderId,
-            ProductName = request.ProductName,
+            ProductId = request.ProductId,
+            ProductName = product.Name,
             Quantity = request.Quantity,
-            UnitPrice = request.UnitPrice,
+            UnitPrice = product.UnitPrice,
             TotalPrice = totalPrice,
             CreatedAt = DateTime.UtcNow
         };
@@ -47,14 +68,19 @@ public class CreateSaleRequestHandler : IRequestHandler<CreateSaleRequest, Creat
         order.TotalAmount += totalPrice;
         order.UpdatedAt = DateTime.UtcNow;
 
+        // Decrease product stock quantity
+        product.StockQuantity -= request.Quantity;
+        product.UpdatedAt = DateTime.UtcNow;
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Created sale {SaleId} for order {OrderId} with total price {TotalPrice}",
-            sale.SaleId, sale.OrderId, sale.TotalPrice);
+        _logger.LogInformation("Created sale {SaleId} for order {OrderId} with total price {TotalPrice}. Product stock updated: {ProductId} - {StockQuantity} remaining",
+            sale.SaleId, sale.OrderId, sale.TotalPrice, product.ProductId, product.StockQuantity);
 
         return new CreateSaleResponse(
             sale.SaleId,
             sale.OrderId,
+            sale.ProductId,
             sale.ProductName,
             sale.Quantity,
             sale.UnitPrice,

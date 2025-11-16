@@ -3,6 +3,7 @@ namespace HOB.API.Sales.GetSale;
 public record GetSaleResponse(
     Guid SaleId,
     Guid OrderId,
+    Guid ProductId,
     string ProductName,
     int Quantity,
     decimal UnitPrice,

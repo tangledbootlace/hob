@@ -46,6 +46,7 @@ public class UpdateSaleRequestHandler : IRequestHandler<UpdateSaleRequest, Updat
         return new UpdateSaleResponse(
             sale.SaleId,
             sale.OrderId,
+            sale.ProductId,
             sale.ProductName,
             sale.Quantity,
             sale.UnitPrice,

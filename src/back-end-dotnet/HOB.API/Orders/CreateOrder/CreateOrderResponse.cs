@@ -13,6 +13,7 @@ public record CreateOrderResponse(
 
 public record SaleItemResponse(
     Guid SaleId,
+    Guid ProductId,
     string ProductName,
     int Quantity,
     decimal UnitPrice,

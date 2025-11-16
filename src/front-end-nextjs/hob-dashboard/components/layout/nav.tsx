@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, ShoppingCart, Package } from "lucide-react";
+import { Home, Users, ShoppingCart, Package, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Customers", href: "/customers", icon: Users },
+  { name: "Products", href: "/products", icon: Package },
   { name: "Orders", href: "/orders", icon: ShoppingCart },
-  { name: "Sales", href: "/sales", icon: Package },
+  { name: "Sales", href: "/sales", icon: Receipt },
 ];
 
 export function Nav() {

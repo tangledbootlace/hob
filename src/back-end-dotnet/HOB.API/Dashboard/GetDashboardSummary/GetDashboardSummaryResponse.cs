@@ -4,10 +4,12 @@ public record GetDashboardSummaryResponse(
     int TotalCustomers,
     int TotalOrders,
     int TotalSales,
+    int TotalProducts,
     decimal TotalRevenue,
     List<RecentOrderSummary> RecentOrders,
     RevenueByStatus RevenueByStatus,
-    List<DailyOrderStats> OrdersLast30Days
+    List<DailyOrderStats> OrdersLast30Days,
+    List<LowStockProduct> LowStockProducts
 );
 
 public record RecentOrderSummary(
@@ -28,4 +30,12 @@ public record DailyOrderStats(
     DateTime Date,
     int Count,
     decimal Revenue
+);
+
+public record LowStockProduct(
+    Guid ProductId,
+    string SKU,
+    string Name,
+    int StockQuantity,
+    int LowStockThreshold
 );

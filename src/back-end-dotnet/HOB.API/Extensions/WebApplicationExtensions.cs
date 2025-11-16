@@ -13,6 +13,11 @@ using HOB.API.Sales.GetSale;
 using HOB.API.Sales.ListSales;
 using HOB.API.Sales.UpdateSale;
 using HOB.API.Sales.DeleteSale;
+using HOB.API.Products.CreateProduct;
+using HOB.API.Products.GetProduct;
+using HOB.API.Products.ListProducts;
+using HOB.API.Products.UpdateProduct;
+using HOB.API.Products.DeleteProduct;
 using HOB.API.Reports.GenerateReport;
 using HOB.API.Dashboard.GetDashboardSummary;
 using MediatR;
@@ -312,5 +317,101 @@ public static class WebApplicationExtensions
             })
             .WithOpenApi()
             .WithName("GetDashboardSummary");
+    }
+
+    public static void UseProductApi(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/products").WithTags("Products");
+
+        group.MapPost("/", async (CreateProductRequest request, [FromServices] IMediator mediator) =>
+            {
+                try
+                {
+                    var response = await mediator.Send(request);
+                    return Results.Created($"/api/products/{response.ProductId}", response);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.Conflict(new { error = ex.Message });
+                }
+            })
+            .WithOpenApi()
+            .WithName("CreateProduct");
+
+        group.MapGet("/{productId:guid}", async (Guid productId, [FromServices] IMediator mediator) =>
+            {
+                try
+                {
+                    var response = await mediator.Send(new GetProductRequest(productId));
+                    return Results.Ok(response);
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return Results.NotFound(new { error = ex.Message });
+                }
+            })
+            .WithOpenApi()
+            .WithName("GetProduct");
+
+        group.MapGet("/", async (
+            int page,
+            int pageSize,
+            string? search,
+            string? category,
+            bool? lowStock,
+            bool? activeOnly,
+            [FromServices] IMediator mediator) =>
+            {
+                var response = await mediator.Send(new ListProductsRequest(
+                    page,
+                    pageSize,
+                    search,
+                    category,
+                    lowStock,
+                    activeOnly
+                ));
+                return Results.Ok(response);
+            })
+            .WithOpenApi()
+            .WithName("ListProducts");
+
+        group.MapPut("/{productId:guid}", async (Guid productId, UpdateProductRequest request, [FromServices] IMediator mediator) =>
+            {
+                try
+                {
+                    var updatedRequest = request with { ProductId = productId };
+                    var response = await mediator.Send(updatedRequest);
+                    return Results.Ok(response);
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return Results.NotFound(new { error = ex.Message });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.Conflict(new { error = ex.Message });
+                }
+            })
+            .WithOpenApi()
+            .WithName("UpdateProduct");
+
+        group.MapDelete("/{productId:guid}", async (Guid productId, [FromServices] IMediator mediator) =>
+            {
+                try
+                {
+                    await mediator.Send(new DeleteProductRequest(productId));
+                    return Results.NoContent();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return Results.NotFound(new { error = ex.Message });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.Conflict(new { error = ex.Message });
+                }
+            })
+            .WithOpenApi()
+            .WithName("DeleteProduct");
     }
 }

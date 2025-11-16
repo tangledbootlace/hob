@@ -10,7 +10,6 @@ public record CreateOrderRequest(
 ) : IRequest<CreateOrderResponse>;
 
 public record SaleItemRequest(
-    string ProductName,
-    int Quantity,
-    decimal UnitPrice
+    Guid ProductId,
+    int Quantity
 );

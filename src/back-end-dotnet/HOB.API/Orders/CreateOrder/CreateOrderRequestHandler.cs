@@ -33,8 +33,39 @@ public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, Cre
             throw new InvalidOperationException("Order must have at least one sale item");
         }
 
-        // Calculate total amount
-        var totalAmount = request.SaleItems.Sum(item => item.Quantity * item.UnitPrice);
+        // Get all product IDs from sale items
+        var productIds = request.SaleItems.Select(si => si.ProductId).Distinct().ToList();
+
+        // Load all products at once
+        var products = await _dbContext.Products
+            .Where(p => productIds.Contains(p.ProductId))
+            .ToDictionaryAsync(p => p.ProductId, cancellationToken);
+
+        // Validate all products exist and are active
+        foreach (var saleItem in request.SaleItems)
+        {
+            if (!products.TryGetValue(saleItem.ProductId, out var product))
+            {
+                throw new KeyNotFoundException($"Product with ID '{saleItem.ProductId}' not found");
+            }
+
+            if (!product.IsActive)
+            {
+                throw new InvalidOperationException($"Product '{product.Name}' is not active and cannot be sold");
+            }
+
+            if (product.StockQuantity < saleItem.Quantity)
+            {
+                throw new InvalidOperationException($"Insufficient stock for product '{product.Name}'. Available: {product.StockQuantity}, Requested: {saleItem.Quantity}");
+            }
+        }
+
+        // Calculate total amount using product prices
+        var totalAmount = request.SaleItems.Sum(item =>
+        {
+            var product = products[item.ProductId];
+            return item.Quantity * product.UnitPrice;
+        });
 
         // Create order
         var order = new Order
@@ -50,22 +81,29 @@ public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, Cre
 
         _dbContext.Orders.Add(order);
 
-        // Create sales
+        // Create sales and update product stock
         var sales = new List<Sale>();
         foreach (var saleItem in request.SaleItems)
         {
+            var product = products[saleItem.ProductId];
+
             var sale = new Sale
             {
                 SaleId = Guid.NewGuid(),
                 OrderId = order.OrderId,
-                ProductName = saleItem.ProductName,
+                ProductId = saleItem.ProductId,
+                ProductName = product.Name,
                 Quantity = saleItem.Quantity,
-                UnitPrice = saleItem.UnitPrice,
-                TotalPrice = saleItem.Quantity * saleItem.UnitPrice,
+                UnitPrice = product.UnitPrice,
+                TotalPrice = saleItem.Quantity * product.UnitPrice,
                 CreatedAt = DateTime.UtcNow
             };
             sales.Add(sale);
             _dbContext.Sales.Add(sale);
+
+            // Decrease product stock
+            product.StockQuantity -= saleItem.Quantity;
+            product.UpdatedAt = DateTime.UtcNow;
         }
 
         // Save everything in one transaction
@@ -84,6 +122,7 @@ public class CreateOrderRequestHandler : IRequestHandler<CreateOrderRequest, Cre
             order.UpdatedAt,
             sales.Select(s => new SaleItemResponse(
                 s.SaleId,
+                s.ProductId,
                 s.ProductName,
                 s.Quantity,
                 s.UnitPrice,
