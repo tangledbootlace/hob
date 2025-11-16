@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RabbitMQ.Client;
 
 namespace HOB.Common.Library.Observability.HealthChecks;
 
@@ -16,7 +17,14 @@ public static class ServiceCollectionExtensions
                 name: "sqlserver",
                 tags: new[] { "db", "sql", "sqlserver" })
             .AddRabbitMQ(
-                rabbitConnectionString: rabbitMqConnection!,
+                sp =>
+                {
+                    var factory = new ConnectionFactory
+                    {
+                        Uri = new Uri(rabbitMqConnection!)
+                    };
+                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                },
                 name: "rabbitmq",
                 tags: new[] { "messagebus", "rabbitmq" });
     }

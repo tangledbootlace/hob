@@ -9,6 +9,8 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["HOB.API/HOB.API.csproj", "HOB.API/"]
+COPY ["HOB.Data/HOB.Data.csproj", "HOB.Data/"]
+COPY ["HOB.Common/HOB.Common.Library/HOB.Common.Library.csproj", "HOB.Common/HOB.Common.Library/"]
 RUN dotnet restore "./HOB.API/HOB.API.csproj"
 COPY . .
 WORKDIR "/src/HOB.API"

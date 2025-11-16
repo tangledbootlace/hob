@@ -35,8 +35,6 @@ app.UsePrometheusMetrics();
 
 app.UseSwaggerDashboard();
 
-app.UseTestApi();
-
 app.UseCustomerApi();
 
 app.UseOrderApi();
