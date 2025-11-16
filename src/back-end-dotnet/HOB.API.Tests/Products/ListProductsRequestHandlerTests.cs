@@ -18,11 +18,10 @@ public class ListProductsRequestHandlerTests : IDisposable
             .Options;
 
         _context = new HobDbContext(options);
-        _context.Database.EnsureCreated();
 
         _handler = new ListProductsRequestHandler(_context);
 
-        // Seed test data
+        // Seed test data (don't call EnsureCreated to avoid seed data from HobDbContext)
         SeedTestData();
     }
 
