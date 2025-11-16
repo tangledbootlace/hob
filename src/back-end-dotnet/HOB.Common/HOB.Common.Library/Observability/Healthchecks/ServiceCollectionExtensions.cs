@@ -19,9 +19,11 @@ public static class ServiceCollectionExtensions
             .AddRabbitMQ(
                 sp =>
                 {
-                    var factory = new ConnectionFactory();
-                    factory.Uri = new Uri(rabbitMqConnection!);
-                    return factory.CreateConnection();
+                    var factory = new ConnectionFactory
+                    {
+                        Uri = new Uri(rabbitMqConnection!)
+                    };
+                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
                 },
                 name: "rabbitmq",
                 tags: new[] { "messagebus", "rabbitmq" });
