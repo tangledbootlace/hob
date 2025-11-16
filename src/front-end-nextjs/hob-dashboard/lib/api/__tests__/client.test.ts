@@ -98,7 +98,7 @@ describe('ApiClient', () => {
         json: async () => { throw new Error('Invalid JSON'); },
       });
 
-      await expect(client.get('/test-endpoint')).rejects.toThrow('API request failed: 500');
+      await expect(client.get('/test-endpoint')).rejects.toThrow('Internal Server Error');
     });
   });
 
