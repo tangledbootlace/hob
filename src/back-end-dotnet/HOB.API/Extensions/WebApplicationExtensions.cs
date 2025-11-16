@@ -1,4 +1,3 @@
-using HOB.API.GetTestEndpoint;
 using HOB.API.Customers.CreateCustomer;
 using HOB.API.Customers.GetCustomer;
 using HOB.API.Customers.ListCustomers;
@@ -23,21 +22,6 @@ namespace HOB.API.Extensions;
 
 public static class WebApplicationExtensions
 {
-    public static void UseTestApi(this WebApplication app)
-    {
-        app.MapGet(pattern: "/v1",
-            async ([FromServices] IMediator mediator) =>
-            {
-                var result = await mediator.Send(new GetTestEndpointRequest());
-                return result;
-            })
-            .Produces<GetTestEndpointResponse>(StatusCodes.Status200OK)
-            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
-            .WithName("v1-TestEndpoint")
-            .WithTags("Reader")
-            .WithOpenApi();
-    }
-
     public static void UseCustomerApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/customers").WithTags("Customers");

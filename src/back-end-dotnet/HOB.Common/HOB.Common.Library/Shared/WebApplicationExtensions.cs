@@ -27,7 +27,7 @@ public static class WebApplicationExtensions
 
                 if (exception != null)
                 {
-                    System.Diagnostics.Activity.Current?.RecordException(exception);
+                    System.Diagnostics.Activity.Current?.AddException(exception);
                 }
                 
                 await Results.Problem()

@@ -55,9 +55,9 @@ public class GetDashboardSummaryRequestHandler : IRequestHandler<GetDashboardSum
             .Where(o => o.OrderDate >= thirtyDaysAgo)
             .GroupBy(o => o.OrderDate.Date)
             .Select(g => new DailyOrderStats(
-                Date: g.Key,
-                Count: g.Count(),
-                Revenue: g.Sum(o => o.TotalAmount)
+                g.Key,
+                g.Count(),
+                g.Sum(o => o.TotalAmount)
             ))
             .OrderBy(x => x.Date)
             .ToListAsync(cancellationToken);
