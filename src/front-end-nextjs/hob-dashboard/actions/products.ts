@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { createProduct, updateProduct, deleteProduct } from "@/lib/api/products";
 import { CreateProductRequest, UpdateProductRequest } from "@/lib/types/product";
 
+export type FormState = {
+  success: boolean;
+  message?: string;
+  errors?: Record<string, string[]>;
+  redirectTo?: string;
+};
+
 export async function createProductAction(formData: FormData) {
   const data: CreateProductRequest = {
     sku: formData.get("sku") as string,
@@ -49,13 +56,23 @@ export async function updateProductAction(productId: string, formData: FormData)
   }
 }
 
-export async function deleteProductAction(productId: string) {
+export async function deleteProductAction(
+  productId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState> {
   try {
     await deleteProduct(productId);
     revalidatePath("/products");
-    redirect("/products");
+    return {
+      success: true,
+      message: "Product deleted successfully",
+      redirectTo: "/products",
+    };
   } catch (error) {
-    console.error("Failed to delete product:", error);
-    throw error;
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to delete product",
+    };
   }
 }

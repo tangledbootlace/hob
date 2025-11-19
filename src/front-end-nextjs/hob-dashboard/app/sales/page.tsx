@@ -20,21 +20,22 @@ export default async function SalesPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sales</h1>
-          <p className="text-gray-600 mt-2">Manage individual sale items and products</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Sales</h1>
+          <p className="text-[var(--muted-foreground)] mt-2 text-sm sm:text-base">Manage individual sale items and products</p>
         </div>
         <Link href="/sales/new">
-          <Button>
+          <Button className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             New Sale
           </Button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
-        <Table>
+      <div className="bg-[var(--card)] rounded-lg border border-[var(--border)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Product Name</TableHead>
@@ -48,7 +49,7 @@ export default async function SalesPage({ searchParams }: PageProps) {
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-[var(--muted-foreground)]">
                   No sales found
                 </TableCell>
               </TableRow>
@@ -56,7 +57,7 @@ export default async function SalesPage({ searchParams }: PageProps) {
               data.items.map((sale) => (
                 <TableRow key={sale.saleId}>
                   <TableCell className="font-medium">
-                    <Link href={`/sales/${sale.saleId}`} className="hover:text-blue-600 hover:underline">
+                    <Link href={`/sales/${sale.saleId}`} className="hover:text-[var(--primary)] hover:underline">
                       {sale.productName}
                     </Link>
                   </TableCell>
@@ -74,6 +75,7 @@ export default async function SalesPage({ searchParams }: PageProps) {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       {/* Pagination */}
@@ -84,7 +86,7 @@ export default async function SalesPage({ searchParams }: PageProps) {
               <Button variant="outline">Previous</Button>
             </Link>
           )}
-          <span className="flex items-center px-4 text-sm text-gray-600">
+          <span className="flex items-center px-4 text-sm text-[var(--muted-foreground)]">
             Page {page} of {data.totalPages}
           </span>
           {page < data.totalPages && (

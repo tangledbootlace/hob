@@ -11,6 +11,7 @@ export interface Product {
   isLowStock: boolean;
   createdAt: string;
   updatedAt: string;
+  salesCount?: number;
 }
 
 export interface CreateProductRequest {

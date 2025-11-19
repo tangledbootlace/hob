@@ -54,14 +54,18 @@ public class GetDashboardSummaryRequestHandler : IRequestHandler<GetDashboardSum
         var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30).Date;
         var ordersLast30Days = await _dbContext.Orders
             .Where(o => o.OrderDate >= thirtyDaysAgo)
-            .GroupBy(o => o.OrderDate.Date)
+            .Select(o => new { Date = o.OrderDate.Date, Order = o })
+            .ToListAsync(cancellationToken);
+
+        var groupedOrders = ordersLast30Days
+            .GroupBy(x => x.Date)
             .Select(g => new DailyOrderStats(
                 g.Key,
                 g.Count(),
-                g.Sum(o => o.TotalAmount)
+                g.Sum(x => x.Order.TotalAmount)
             ))
             .OrderBy(x => x.Date)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         // Get low stock products
         var lowStockProducts = await _dbContext.Products
@@ -84,7 +88,7 @@ public class GetDashboardSummaryRequestHandler : IRequestHandler<GetDashboardSum
             totalRevenue,
             recentOrders,
             revenueStatus,
-            ordersLast30Days,
+            groupedOrders,
             lowStockProducts
         );
     }

@@ -61,7 +61,7 @@ public static class WebApplicationExtensions
             .WithOpenApi()
             .WithName("GetCustomer");
 
-        group.MapGet("/", async (int page, int pageSize, string? search, [FromServices] IMediator mediator) =>
+        group.MapGet("/", async ([FromServices] IMediator mediator, int page = 1, int pageSize = 20, string? search = null) =>
             {
                 var response = await mediator.Send(new ListCustomersRequest(page, pageSize, search));
                 return Results.Ok(response);

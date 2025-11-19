@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { createSale, updateSale, deleteSale } from "@/lib/api/sales";
 import { CreateSaleRequest, UpdateSaleRequest } from "@/lib/types/sale";
 
+export interface FormState {
+  success: boolean;
+  message: string;
+  redirectTo?: string;
+}
+
 export async function createSaleAction(formData: FormData) {
   const data: CreateSaleRequest = {
     orderId: formData.get("orderId") as string,
@@ -38,12 +44,23 @@ export async function updateSaleAction(saleId: string, formData: FormData) {
   }
 }
 
-export async function deleteSaleAction(saleId: string) {
+export async function deleteSaleAction(
+  saleId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState> {
   try {
     await deleteSale(saleId);
     revalidatePath("/sales");
-    redirect("/sales");
+    return {
+      success: true,
+      message: "Sale deleted successfully",
+      redirectTo: "/sales",
+    };
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to delete sale");
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to delete sale",
+    };
   }
 }

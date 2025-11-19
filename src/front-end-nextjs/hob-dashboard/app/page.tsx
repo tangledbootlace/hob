@@ -12,16 +12,16 @@ export default async function DashboardPage() {
   const summary = await getDashboardSummary();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-[var(--muted-foreground)] mt-2 text-sm sm:text-base">
           Overview of your business metrics and recent activity
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="Total Customers"
           value={summary.totalCustomers}
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Revenue by Status */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <StatsCard
           title="Pending Revenue"
           value={`$${summary.revenueByStatus.pending.toFixed(2)}`}
@@ -77,9 +77,9 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Low Stock Alerts */}
         {summary.lowStockProducts.length > 0 && (
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-950/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-yellow-800">
+              <CardTitle className="flex items-center gap-2 text-yellow-800 dark:text-yellow-500">
                 <AlertTriangle className="h-5 w-5" />
                 Low Stock Alerts ({summary.lowStockProducts.length})
               </CardTitle>
@@ -89,17 +89,17 @@ export default async function DashboardPage() {
                 {summary.lowStockProducts.slice(0, 5).map((product) => (
                   <div
                     key={product.productId}
-                    className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm"
+                    className="flex items-center justify-between rounded-lg bg-white dark:bg-[var(--card)] p-3 shadow-sm border border-[var(--border)]"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-sm text-[var(--muted-foreground)]">SKU: {product.sku}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-yellow-700">
+                      <p className="font-semibold text-yellow-700 dark:text-yellow-500">
                         {product.stockQuantity} units
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--muted-foreground)]">
                         Threshold: {product.lowStockThreshold}
                       </p>
                     </div>

@@ -1,13 +1,19 @@
 "use client";
 
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormState } from "@/actions/customers";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface CustomerFormProps {
-  action: (formData: FormData) => void;
+  action: (prevState: FormState | null, formData: FormData) => Promise<FormState>;
   defaultValues?: {
     name: string;
     email: string;
@@ -27,13 +33,33 @@ function SubmitButton({ isEdit }: { isEdit?: boolean }) {
 }
 
 export function CustomerForm({ action, defaultValues, isEdit }: CustomerFormProps) {
+  const [state, formAction] = useActionState(action, null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success && state?.redirectTo) {
+      router.push(state.redirectTo);
+    }
+  }, [state, router]);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{isEdit ? "Edit Customer" : "Create New Customer"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-4">
+        <form action={formAction} className="space-y-4">
+          {state?.message && (
+            <Alert variant={state.success ? "default" : "destructive"}>
+              {state.success ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="name">Name *</Label>
             <Input

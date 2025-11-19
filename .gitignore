@@ -54,4 +54,10 @@ TestResult.xml
 nunit-*.xml
 
 # Localization
-[Dd]ocker/data/mssql/data/*
+local-containers/data/mssql/data/*
+.env
+
+# Testing
+src/front-end-nextjs/hob-dashboard/playwright-report/data/*
+src/front-end-nextjs/hob-dashboard/test-results/*
+src/front-end-nextjs/hob-dashboard/e2e/*

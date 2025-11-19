@@ -28,7 +28,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Order Details</h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-[var(--muted-foreground)] mt-2">
               {order.customerName} - {new Date(order.orderDate).toLocaleDateString()}
             </p>
           </div>
@@ -49,19 +49,19 @@ export default async function OrderDetailPage({ params }: PageProps) {
           <CardContent className="space-y-4">
             <div>
               <Label>Customer</Label>
-              <p className="text-sm text-gray-900 mt-1">
-                <Link href={`/customers/${order.customerId}`} className="hover:text-blue-600 hover:underline">
+              <p className="text-sm text-[var(--foreground)] mt-1">
+                <Link href={`/customers/${order.customerId}`} className="hover:text-[var(--primary)] hover:underline">
                   {order.customerName}
                 </Link>
               </p>
             </div>
             <div>
               <Label>Order Date</Label>
-              <p className="text-sm text-gray-900 mt-1">{new Date(order.orderDate).toLocaleDateString()}</p>
+              <p className="text-sm text-[var(--foreground)] mt-1">{new Date(order.orderDate).toLocaleDateString()}</p>
             </div>
             <div>
               <Label>Total Amount</Label>
-              <p className="text-sm text-gray-900 mt-1">${order.totalAmount.toFixed(2)}</p>
+              <p className="text-sm text-[var(--foreground)] mt-1">${order.totalAmount.toFixed(2)}</p>
             </div>
             <form action={updateAction} className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -70,7 +70,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   id="status"
                   name="status"
                   defaultValue={order.status}
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                  className="flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 text-sm ring-offset-[var(--background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Completed">Completed</option>

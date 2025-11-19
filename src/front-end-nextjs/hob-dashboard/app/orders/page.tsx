@@ -23,7 +23,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-gray-600 mt-2">Manage customer orders and transactions</p>
+          <p className="text-[var(--muted-foreground)] mt-2">Manage customer orders and transactions</p>
         </div>
         <Link href="/orders/new">
           <Button>
@@ -33,7 +33,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="bg-[var(--card)] rounded-lg border border-[var(--border)]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -48,7 +48,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           <TableBody>
             {data.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-[var(--muted-foreground)]">
                   No orders found
                 </TableCell>
               </TableRow>
@@ -56,7 +56,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               data.items.map((order) => (
                 <TableRow key={order.orderId}>
                   <TableCell className="font-medium">
-                    <Link href={`/orders/${order.orderId}`} className="hover:text-blue-600 hover:underline">
+                    <Link href={`/orders/${order.orderId}`} className="hover:text-[var(--primary)] hover:underline">
                       {order.customerName}
                     </Link>
                   </TableCell>
@@ -66,10 +66,10 @@ export default async function OrdersPage({ searchParams }: PageProps) {
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                         order.status === "Completed"
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400"
                           : order.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400"
                       }`}
                     >
                       {order.status}
@@ -96,7 +96,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               <Button variant="outline">Previous</Button>
             </Link>
           )}
-          <span className="flex items-center px-4 text-sm text-gray-600">
+          <span className="flex items-center px-4 text-sm text-[var(--muted-foreground)]">
             Page {page} of {data.totalPages}
           </span>
           {page < data.totalPages && (

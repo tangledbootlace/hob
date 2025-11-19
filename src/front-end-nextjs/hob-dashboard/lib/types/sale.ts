@@ -6,7 +6,14 @@ export interface Sale {
   unitPrice: number;
   totalPrice: number;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  order?: {
+    orderDate: string;
+    customerName: string;
+    status: string;
+    salesCount: number;
+  };
+  // Legacy field for backward compatibility
   orderDetails?: {
     orderDate: string;
     customerName: string;

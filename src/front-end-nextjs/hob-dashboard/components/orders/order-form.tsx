@@ -67,7 +67,7 @@ export function OrderForm({ action, customers }: OrderFormProps) {
               id="customerId"
               name="customerId"
               required
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+              className="flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 text-sm ring-offset-[var(--background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
             >
               <option value="">Select a customer</option>
               {customers.map((customer) => (

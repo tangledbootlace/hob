@@ -17,6 +17,9 @@ public class GetSaleRequestHandler : IRequestHandler<GetSaleRequest, GetSaleResp
     {
         var sale = await _dbContext.Sales
             .Include(s => s.Order)
+                .ThenInclude(o => o.Customer)
+            .Include(s => s.Order)
+                .ThenInclude(o => o.Sales)
             .FirstOrDefaultAsync(s => s.SaleId == request.SaleId, cancellationToken);
 
         if (sale == null)
@@ -29,7 +32,9 @@ public class GetSaleRequestHandler : IRequestHandler<GetSaleRequest, GetSaleResp
             sale.Order.CustomerId,
             sale.Order.OrderDate,
             sale.Order.TotalAmount,
-            sale.Order.Status
+            sale.Order.Status,
+            sale.Order.Customer.Name,
+            sale.Order.Sales.Count
         );
 
         return new GetSaleResponse(

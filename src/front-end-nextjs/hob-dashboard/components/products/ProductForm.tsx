@@ -126,7 +126,7 @@ export function ProductForm({ product, action }: ProductFormProps) {
                   id="isActive"
                   name="isActive"
                   defaultValue={product.isActive.toString()}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  className="flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 text-sm ring-offset-[var(--background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                 >
                   <option value="true">Active</option>
                   <option value="false">Inactive</option>

@@ -16,6 +16,7 @@ public class GetProductRequestHandler : IRequestHandler<GetProductRequest, GetPr
     public async Task<GetProductResponse> Handle(GetProductRequest request, CancellationToken cancellationToken)
     {
         var product = await _dbContext.Products
+            .Include(p => p.Sales)
             .FirstOrDefaultAsync(p => p.ProductId == request.ProductId, cancellationToken);
 
         if (product == null)
@@ -34,7 +35,8 @@ public class GetProductRequestHandler : IRequestHandler<GetProductRequest, GetPr
             product.Category,
             product.IsActive,
             product.CreatedAt,
-            product.UpdatedAt
+            product.UpdatedAt,
+            product.Sales.Count
         );
     }
 }

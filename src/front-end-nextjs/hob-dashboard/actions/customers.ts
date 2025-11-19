@@ -5,7 +5,17 @@ import { redirect } from "next/navigation";
 import { createCustomer, updateCustomer, deleteCustomer } from "@/lib/api/customers";
 import { CreateCustomerRequest, UpdateCustomerRequest } from "@/lib/types/customer";
 
-export async function createCustomerAction(formData: FormData) {
+export type FormState = {
+  success: boolean;
+  message?: string;
+  errors?: Record<string, string[]>;
+  redirectTo?: string;
+};
+
+export async function createCustomerAction(
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState> {
   const data: CreateCustomerRequest = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
@@ -15,13 +25,24 @@ export async function createCustomerAction(formData: FormData) {
   try {
     const customer = await createCustomer(data);
     revalidatePath("/customers");
-    redirect(`/customers/${customer.customerId}`);
+    return {
+      success: true,
+      message: "Customer created successfully",
+      redirectTo: `/customers/${customer.customerId}`,
+    };
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to create customer");
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create customer",
+    };
   }
 }
 
-export async function updateCustomerAction(customerId: string, formData: FormData) {
+export async function updateCustomerAction(
+  customerId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState> {
   const data: UpdateCustomerRequest = {
     name: formData.get("name") as string,
     email: formData.get("email") as string,
@@ -32,17 +53,35 @@ export async function updateCustomerAction(customerId: string, formData: FormDat
     await updateCustomer(customerId, data);
     revalidatePath(`/customers/${customerId}`);
     revalidatePath("/customers");
+    return {
+      success: true,
+      message: "Customer updated successfully",
+    };
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to update customer");
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update customer",
+    };
   }
 }
 
-export async function deleteCustomerAction(customerId: string) {
+export async function deleteCustomerAction(
+  customerId: string,
+  prevState: FormState | null,
+  formData: FormData
+): Promise<FormState> {
   try {
     await deleteCustomer(customerId);
     revalidatePath("/customers");
-    redirect("/customers");
+    return {
+      success: true,
+      message: "Customer deleted successfully",
+      redirectTo: "/customers",
+    };
   } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to delete customer");
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to delete customer",
+    };
   }
 }

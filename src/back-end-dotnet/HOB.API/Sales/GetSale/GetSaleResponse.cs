@@ -17,5 +17,7 @@ public record OrderDetails(
     Guid CustomerId,
     DateTime OrderDate,
     decimal TotalAmount,
-    string Status
+    string Status,
+    string CustomerName,
+    int SalesCount
 );

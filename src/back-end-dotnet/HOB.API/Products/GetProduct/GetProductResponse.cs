@@ -11,5 +11,6 @@ public record GetProductResponse(
     string? Category,
     bool IsActive,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    int SalesCount
 );

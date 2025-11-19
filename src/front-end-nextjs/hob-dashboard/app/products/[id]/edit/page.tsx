@@ -4,23 +4,24 @@ import { getProduct } from "@/lib/api/products";
 import { updateProductAction } from "@/actions/products";
 import { ProductForm } from "@/components/products/ProductForm";
 
-export default async function EditProductPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const product = await getProduct(params.id);
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function EditProductPage({ params }: PageProps) {
+  const { id } = await params;
+  const product = await getProduct(id);
 
   const handleUpdate = async (formData: FormData) => {
     "use server";
-    await updateProductAction(params.id, formData);
+    await updateProductAction(id, formData);
   };
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <Link
-          href={`/products/${params.id}`}
+          href={`/products/${id}`}
           className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
         >
           <ArrowLeft className="mr-1 h-4 w-4" />

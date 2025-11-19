@@ -21,6 +21,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-services-users.rule=Host(`hob.api.localhost`)"
       - "traefik.http.routers.backend-services-users.entrypoints=web"
+      - "traefik.http.services.backend-services-users.loadbalancer.server.port=8080"
     networks:
       - hob-network
 
@@ -52,14 +53,23 @@ services:
   dashboard:
     build:
       context: ../src/front-end-nextjs/hob-dashboard
-      dockerfile: Dockerfile
-    image: hob-dashboard:latest
+      dockerfile: Dockerfile.dev
+    image: hob-dashboard:dev
     container_name: hob-dashboard
     depends_on:
       - hob.api
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://hob.api:8080
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ../src/front-end-nextjs/hob-dashboard:/app
+      # Use named volume for node_modules to avoid conflicts
+      - dashboard_node_modules:/app/node_modules
+      # Mount .next for build cache
+      - dashboard_next:/app/.next
     networks:
       - hob-network
     labels:
@@ -71,3 +81,7 @@ services:
 networks:
   hob-network:
     external: true
+
+volumes:
+  dashboard_node_modules:
+  dashboard_next:

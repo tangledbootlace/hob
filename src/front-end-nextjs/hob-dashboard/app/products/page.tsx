@@ -20,16 +20,17 @@ interface SearchParams {
   lowStock?: string;
 }
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const page = parseInt(searchParams.page || "1");
-  const pageSize = parseInt(searchParams.pageSize || "20");
-  const search = searchParams.search;
-  const category = searchParams.category;
-  const lowStock = searchParams.lowStock === "true" ? true : undefined;
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
+
+export default async function ProductsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const page = parseInt(params.page || "1");
+  const pageSize = parseInt(params.pageSize || "20");
+  const search = params.search;
+  const category = params.category;
+  const lowStock = params.lowStock === "true" ? true : undefined;
 
   const { items: products, totalPages } = await getProducts(
     page,
@@ -44,7 +45,7 @@ export default async function ProductsPage({
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Products</h1>
-          <p className="mt-2 text-gray-600">Manage your product catalog and inventory</p>
+          <p className="mt-2 text-[var(--muted-foreground)]">Manage your product catalog and inventory</p>
         </div>
         <Link href="/products/new">
           <Button>
@@ -59,7 +60,7 @@ export default async function ProductsPage({
           <CardTitle>
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              All Products
+              Product List
             </div>
           </CardTitle>
         </CardHeader>
@@ -94,10 +95,10 @@ export default async function ProductsPage({
                       ${product.unitPrice.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className={product.isLowStock ? "text-yellow-600 font-semibold" : ""}>
+                      <span className={product.isLowStock ? "text-yellow-600 dark:text-yellow-500 font-semibold" : ""}>
                         {product.stockQuantity}
                       </span>
-                      <span className="text-gray-500 text-sm"> / {product.lowStockThreshold}</span>
+                      <span className="text-[var(--muted-foreground)] text-sm"> / {product.lowStockThreshold}</span>
                     </TableCell>
                     <TableCell>
                       <span
@@ -121,7 +122,7 @@ export default async function ProductsPage({
                 ))}
                 {products.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                    <TableCell colSpan={7} className="text-center text-[var(--muted-foreground)] py-8">
                       No products found
                     </TableCell>
                   </TableRow>
@@ -137,7 +138,7 @@ export default async function ProductsPage({
                   <Button variant="outline">Previous</Button>
                 </Link>
               )}
-              <span className="flex items-center px-4 text-sm text-gray-700">
+              <span className="flex items-center px-4 text-sm text-[var(--muted-foreground)]">
                 Page {page} of {totalPages}
               </span>
               {page < totalPages && (

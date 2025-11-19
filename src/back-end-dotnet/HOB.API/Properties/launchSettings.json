@@ -7,7 +7,12 @@
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5028",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "HOB_SERVICES_ContainerPort": "5028",
+        "ConnectionStrings__DefaultConnection": "Server=localhost,1433;Database=HOB;User Id=sa;Password=Password123;TrustServerCertificate=True;MultipleActiveResultSets=True;",
+        "ConnectionStrings__RabbitMQ": "amqp://local:local@localhost:5672",
+        "OpenTelemetry__ServiceName": "HOB.API",
+        "OpenTelemetry__OtlpEndpoint": "http://localhost:4317"
       }
     },
     "https": {
@@ -16,7 +21,12 @@
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7181;http://localhost:5028",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "HOB_SERVICES_ContainerPort": "5028",
+        "ConnectionStrings__DefaultConnection": "Server=localhost,1433;Database=HOB;User Id=sa;Password=Password123;TrustServerCertificate=True;MultipleActiveResultSets=True;",
+        "ConnectionStrings__RabbitMQ": "amqp://local:local@localhost:5672",
+        "OpenTelemetry__ServiceName": "HOB.API",
+        "OpenTelemetry__OtlpEndpoint": "http://localhost:4317"
       }
     }
   }

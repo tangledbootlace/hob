@@ -42,9 +42,11 @@ export async function updateOrderAction(orderId: string, formData: FormData) {
 export async function deleteOrderAction(orderId: string) {
   try {
     await deleteOrder(orderId);
-    revalidatePath("/orders");
-    redirect("/orders");
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "Failed to delete order");
   }
+
+  // Redirect outside of try-catch to allow Next.js to handle it properly
+  revalidatePath("/orders");
+  redirect("/orders");
 }
