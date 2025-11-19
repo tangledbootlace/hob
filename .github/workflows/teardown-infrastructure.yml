@@ -1,0 +1,134 @@
+name: Teardown Infrastructure (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy (production/staging/dev)'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - dev
+      destroy_volumes:
+        description: 'Destroy persistent volumes? (⚠️ This will delete all data!)'
+        required: true
+        default: false
+        type: boolean
+      confirmation:
+        description: 'Type "DESTROY" to confirm (case-sensitive)'
+        required: true
+
+jobs:
+  teardown:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate Confirmation
+        run: |
+          if [ "${{ inputs.confirmation }}" != "DESTROY" ]; then
+            echo "❌ Confirmation failed. You must type 'DESTROY' (case-sensitive) to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Configure Terraform Variables
+        working-directory: infrastructure/terraform
+        run: |
+          cat > terraform.tfvars <<EOF
+          # Portainer Configuration
+          portainer_url         = "${{ secrets.PORTAINER_URL }}"
+          portainer_username    = "${{ secrets.PORTAINER_USERNAME }}"
+          portainer_password    = "${{ secrets.PORTAINER_PASSWORD }}"
+          portainer_endpoint_id = ${{ secrets.PORTAINER_ENDPOINT_ID }}
+
+          # Environment Configuration
+          environment = "${{ inputs.environment }}"
+
+          # Domain Configuration
+          hob_api_domain       = "${{ vars.HOB_API_DOMAIN }}"
+          hob_dashboard_domain = "${{ vars.HOB_DASHBOARD_DOMAIN }}"
+          grafana_domain       = "${{ vars.GRAFANA_DOMAIN }}"
+          prometheus_domain    = "${{ vars.PROMETHEUS_DOMAIN }}"
+          jaeger_domain        = "${{ vars.JAEGER_DOMAIN }}"
+          rabbitmq_domain      = "${{ vars.RABBITMQ_DOMAIN }}"
+
+          # Database Configuration
+          db_password = "${{ secrets.DB_PASSWORD }}"
+
+          # RabbitMQ Configuration
+          rabbitmq_user     = "${{ secrets.RABBITMQ_USER }}"
+          rabbitmq_password = "${{ secrets.RABBITMQ_PASSWORD }}"
+
+          # Grafana Configuration
+          grafana_admin_password = "${{ secrets.GRAFANA_ADMIN_PASSWORD }}"
+
+          # Docker Registry Configuration
+          docker_registry          = "${{ vars.DOCKER_REGISTRY || 'ghcr.io' }}"
+          docker_registry_username = "${{ github.actor }}"
+          docker_registry_password = "${{ secrets.GITHUB_TOKEN }}"
+          image_tag                = "${{ github.sha }}"
+
+          # Volume Configuration
+          data_volume_path    = "${{ vars.DATA_VOLUME_PATH || '/opt/hob/data' }}"
+          reports_volume_path = "${{ vars.REPORTS_VOLUME_PATH || '/opt/hob/reports' }}"
+          EOF
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
+
+      - name: Terraform Plan Destroy
+        working-directory: infrastructure/terraform
+        run: terraform plan -destroy -out=destroy.tfplan
+
+      - name: Display Destroy Plan
+        working-directory: infrastructure/terraform
+        run: terraform show destroy.tfplan
+
+      - name: Terraform Destroy
+        working-directory: infrastructure/terraform
+        run: terraform apply -auto-approve destroy.tfplan
+
+      - name: Destroy Volumes (Optional)
+        if: inputs.destroy_volumes == true
+        run: |
+          echo "⚠️ Volume destruction requested but requires SSH access to server"
+          echo "This step is informational only. To destroy volumes, run:"
+          echo ""
+          echo "  ssh user@server 'sudo rm -rf ${{ vars.DATA_VOLUME_PATH || '/opt/hob/data' }}'"
+          echo "  ssh user@server 'sudo rm -rf ${{ vars.REPORTS_VOLUME_PATH || '/opt/hob/reports' }}'"
+          echo ""
+          echo "Or use the teardown script on the server:"
+          echo "  ssh user@server 'cd /path/to/hob/infrastructure && ./teardown.sh --destroy-volumes'"
+
+      - name: Cleanup Summary
+        run: |
+          echo "✅ Infrastructure teardown complete!"
+          echo ""
+          echo "Resources destroyed:"
+          echo "  - HOB Services (API, Dashboard)"
+          echo "  - HOB Infrastructure (Database, RabbitMQ, Monitoring)"
+          echo ""
+          if [ "${{ inputs.destroy_volumes }}" = "true" ]; then
+            echo "⚠️ Manual step required: Destroy volumes on server (see job output above)"
+          else
+            echo "ℹ️ Persistent volumes were preserved"
+          fi
+          echo ""
+          echo "To redeploy:"
+          echo "  1. Update GitHub Secrets/Variables if needed"
+          echo "  2. Run 'Deploy Infrastructure' workflow"
+          echo "  3. Run 'Build and Push' workflow"
+          echo "  4. Run 'Deploy Services' workflow"

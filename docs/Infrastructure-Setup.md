@@ -494,6 +494,244 @@ docker logs -f hob-api
 4. Test SSH connection manually
 5. Check server logs during scheduled time
 
+## Pre-Deployment Validation
+
+Before deploying infrastructure, it's recommended to run the validation script to check for common issues:
+
+### Running the Validation Script
+
+```bash
+# Navigate to infrastructure directory
+cd infrastructure
+
+# Run validation
+./validate.sh
+
+# Or specify a custom .env file
+./validate.sh --env-file /path/to/.env
+```
+
+### What the Validation Script Checks
+
+The validation script performs the following checks:
+
+1. ✅ Terraform installation and version
+2. ✅ Docker installation
+3. ✅ Terraform configuration files present
+4. ✅ Docker Compose files present
+5. ✅ Environment configuration file
+6. ✅ Terraform variables file
+7. ✅ Required environment variables set
+8. ✅ Password strength validation
+9. ✅ Volume paths exist and are writable
+10. ✅ Portainer connectivity
+11. ✅ Terraform initialization status
+12. ✅ Git repository status
+
+### Validation Results
+
+- **✓ Errors: 0, Warnings: 0**: Ready to deploy
+- **⚠️ Warnings > 0**: Review warnings, may proceed with caution
+- **✗ Errors > 0**: Must fix errors before deployment
+
+Example output:
+```
+==========================================
+  HOB Infrastructure Validation
+==========================================
+
+[✓] Terraform 1.9.0 installed
+[✓] Docker 24.0.0 installed
+[✓] All Terraform configuration files present
+[✓] All Docker Compose files present
+[✓] Environment file found: .env
+[✓] terraform.tfvars found
+[✓] DB_PASSWORD meets strength requirements
+[✓] Portainer is accessible at https://portainer.example.com
+
+==========================================
+  Validation Summary
+==========================================
+Total checks: 13
+Errors: 0
+Warnings: 0
+
+✅ Validation PASSED
+All checks passed! Ready for deployment.
+```
+
+## Infrastructure Teardown
+
+When you need to destroy the infrastructure (for decommissioning, migration, or rebuilding), use the teardown script or GitHub Actions workflow.
+
+### ⚠️ WARNING
+
+**Teardown is DESTRUCTIVE and IRREVERSIBLE**. Ensure you have:
+- [ ] Backed up all important data
+- [ ] Exported configurations you want to keep
+- [ ] Notified all stakeholders
+- [ ] Verified you're targeting the correct environment
+
+### Option 1: Using the Teardown Script (Server)
+
+The teardown script can be run directly on the server:
+
+```bash
+# Navigate to infrastructure directory
+cd infrastructure
+
+# Basic teardown (preserves volumes)
+./teardown.sh
+
+# Teardown with volume destruction
+./teardown.sh --destroy-volumes
+
+# Non-interactive teardown (use with caution!)
+./teardown.sh --auto-approve
+
+# Combine options
+./teardown.sh --auto-approve --destroy-volumes
+```
+
+#### Teardown Script Process
+
+1. **Validation**: Checks Terraform is installed and initialized
+2. **Warning**: Displays what will be destroyed
+3. **Confirmation**: Requires typing "yes" to proceed (unless --auto-approve)
+4. **Terraform Destroy**: Removes all Portainer stacks (services, then infrastructure)
+5. **Volume Cleanup** (optional): Removes persistent volumes if --destroy-volumes flag used
+6. **Summary**: Shows completion status and recovery instructions
+
+### Option 2: Using GitHub Actions Workflow
+
+For remote teardown via GitHub Actions:
+
+1. Navigate to **Actions** tab in GitHub
+2. Select **"Teardown Infrastructure (Manual)"** workflow
+3. Click **"Run workflow"**
+4. Configure options:
+   - **Environment**: production/staging/dev
+   - **Destroy volumes**: true/false (⚠️ data loss!)
+   - **Confirmation**: Type "DESTROY" (case-sensitive)
+5. Click **"Run workflow"**
+
+The workflow will:
+- Validate confirmation input
+- Initialize Terraform
+- Run `terraform destroy`
+- Provide instructions for manual volume cleanup (if requested)
+
+### What Gets Destroyed
+
+#### Always Destroyed
+- ✗ HOB API containers
+- ✗ HOB Dashboard containers
+- ✗ HOB Worker containers
+- ✗ Traefik reverse proxy
+- ✗ Prometheus container
+- ✗ Grafana container
+- ✗ Jaeger tracing container
+- ✗ RabbitMQ container
+- ✗ SQL Server database container
+- ✗ Docker networks (hob-network)
+
+#### Preserved by Default
+- ✓ Persistent volumes (/opt/hob/data)
+- ✓ Report files (/opt/hob/reports)
+- ✓ Terraform state files
+- ✓ Configuration files (.env, terraform.tfvars)
+
+#### Destroyed with --destroy-volumes Flag
+- ✗ Database files (SQL Server data)
+- ✗ Prometheus metrics history
+- ✗ Grafana dashboards and settings
+- ✗ Generated reports
+- ✗ RabbitMQ queue data
+
+### Post-Teardown Cleanup
+
+After running teardown, you may want to clean up additional artifacts:
+
+```bash
+# Remove Terraform state (if starting fresh)
+cd infrastructure/terraform
+rm -rf .terraform terraform.tfstate* .terraform.lock.hcl
+
+# Remove Docker networks (if not auto-removed)
+docker network rm hob-network
+
+# Verify all containers are removed
+docker ps -a | grep hob
+
+# Verify all volumes are removed (if volumes were destroyed)
+docker volume ls | grep hob
+```
+
+### Recovering from Teardown
+
+To redeploy after teardown:
+
+#### Option 1: Full Redeployment via Terraform
+
+```bash
+# Ensure configuration is still valid
+cd infrastructure
+./validate.sh
+
+# Initialize Terraform (if state was cleaned)
+cd terraform
+terraform init
+
+# Review deployment plan
+terraform plan
+
+# Deploy infrastructure
+terraform apply
+```
+
+#### Option 2: Redeployment via GitHub Actions
+
+1. Run **"Deploy Infrastructure"** workflow (if enabled)
+2. Run **"Build and Push"** workflow to build images
+3. Run **"Deploy Services"** workflow to deploy API/Dashboard
+4. Run **"Worker Schedule"** workflow (if using scheduled workers)
+
+### Partial Teardown
+
+To destroy only specific stacks:
+
+```bash
+cd infrastructure/terraform
+
+# Destroy only services (preserve infrastructure)
+terraform destroy -target=portainer_stack.services
+
+# Destroy only infrastructure (requires services to be destroyed first)
+terraform destroy -target=portainer_stack.infrastructure
+```
+
+### Emergency Teardown
+
+If Terraform destroy fails or is unavailable:
+
+```bash
+# Stop all HOB containers
+docker ps | grep hob | awk '{print $1}' | xargs docker stop
+
+# Remove all HOB containers
+docker ps -a | grep hob | awk '{print $1}' | xargs docker rm
+
+# Remove HOB network
+docker network rm hob-network
+
+# Remove volumes (USE WITH CAUTION!)
+docker volume ls | grep hob | awk '{print $2}' | xargs docker volume rm
+
+# OR manually remove volume directories
+sudo rm -rf /opt/hob/data
+sudo rm -rf /opt/hob/reports
+```
+
 ## Next Steps
 
 After successful infrastructure setup:

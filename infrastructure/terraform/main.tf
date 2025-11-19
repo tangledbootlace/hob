@@ -14,6 +14,15 @@ resource "portainer_stack" "infrastructure" {
   name         = local.stack_name_infrastructure
   endpoint_id  = var.portainer_endpoint_id
 
+  lifecycle {
+    # Prevent accidental destruction of infrastructure stack (database, message queue)
+    prevent_destroy = false  # Set to true in production to prevent accidental deletion
+    # Ignore changes to git_config as it may be managed outside Terraform
+    ignore_changes = [
+      git_config
+    ]
+  }
+
   env = [
     {
       name  = "SA_PASSWORD"
@@ -53,7 +62,7 @@ resource "portainer_stack" "infrastructure" {
     }
   ]
 
-  file_content = templatefile("${path.module}/../../HOB.API/infrastructure/docker-compose.infrastructure.yml", {
+  file_content = templatefile("${path.module}/../docker-compose.infrastructure.yml", {
     prometheus_domain = var.prometheus_domain
     grafana_domain    = var.grafana_domain
     jaeger_domain     = var.jaeger_domain
@@ -68,6 +77,15 @@ resource "portainer_stack" "services" {
   endpoint_id  = var.portainer_endpoint_id
 
   depends_on = [portainer_stack.infrastructure]
+
+  lifecycle {
+    # Create new version before destroying old (zero-downtime updates)
+    create_before_destroy = true
+    # Ignore changes to git_config as it may be managed outside Terraform
+    ignore_changes = [
+      git_config
+    ]
+  }
 
   env = [
     {
@@ -104,7 +122,7 @@ resource "portainer_stack" "services" {
     }
   ]
 
-  file_content = templatefile("${path.module}/../../HOB.API/infrastructure/docker-compose.services.yml", {
+  file_content = templatefile("${path.module}/../docker-compose.services.yml", {
     hob_api_domain       = var.hob_api_domain
     hob_dashboard_domain = var.hob_dashboard_domain
     image_tag            = var.image_tag
